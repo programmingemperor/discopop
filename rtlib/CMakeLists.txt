@@ -7,6 +7,7 @@ set(DiscoPoP_SOURCES
   iFunctions.cpp
   signature.cpp
   #../share/lib/DPUtils.cpp
+  iFunctions_CUInst.cpp
   )
   
 set(CMAKE_CXX_FLAGS
