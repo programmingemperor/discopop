@@ -82,6 +82,7 @@ namespace __dp
 
     void addDep(depType type, LID curr, LID depOn, char *var)
     {
+        if(curr == 0 || depOn == 0) return;
         depMap::iterator posInDeps = myMap->find(curr);
         if (posInDeps == myMap->end())
         {
