@@ -382,6 +382,10 @@ namespace __dp
                 for (unsigned short i = 0; i < CHUNK_SIZE; ++i)
                 {
                     access = accesses[i];
+                    if(access.lid == 0) {
+                        SMem->insertToWrite(access.addr, access.lid);
+                        continue;
+                    }
 
                     if (access.isRead)
                     {

@@ -54,13 +54,11 @@ using namespace llvm;
 using namespace std;
 using namespace dputil;
 
-// Command line options
 static cl::opt<bool> ClCheckLoopPar("dp-loop-par", cl::init(true),
                                     cl::desc("Check loop parallelism"), cl::Hidden);
 
 namespace
 {
-
     // DiscoPoP: instrument the code in module to find potential parallelism
     class DiscoPoP : public FunctionPass
     {
@@ -98,7 +96,7 @@ namespace
         // Callback Inserters
         //void insertDpInit(const vector<Value*> &args, Instruction *before);
         //void insertDpFinalize(Instruction *before);
-        void instrumentStore(StoreInst *toInstrument);
+        void instrumentStore(Instruction *toInstrument);
         void instrumentLoad(LoadInst *toInstrument);
         void insertDpFinalize(Instruction *before);
         void instrumentFuncEntry(Function &F);
@@ -577,8 +575,14 @@ Type *DiscoPoP::pointsToStruct(PointerType *PTy)
 Value *DiscoPoP::determineVarName(Instruction *const I)
 {
     assert(I && "Instruction cannot be NULL \n");
-    int index = isa<StoreInst>(I) ? 1 : 0;
-    Value *operand = I->getOperand(index);
+    Value *operand;
+    if (DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(I)){
+        operand = DbgDeclare->getAddress();
+    }                     
+    else{
+        int index = isa<StoreInst>(I) ? 1 : 0;
+        operand = I->getOperand(index);                
+    }
 
     IRBuilder<> builder(I);
 
@@ -736,6 +740,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
         if (DbgDeclareInst *DI = dyn_cast<DbgDeclareInst>(BI))
         {
             assert(DI->getOperand(0));
+            instrumentStore(DI);
             //MDNode* node = cast<MDNode>(DI->getOperand(0));
             // llvm.dbg.declare changes from LLVM 3.3 to 3.6.1:
             // LLVM 3.6.1: call @llvm.dbg.declare(metadata %struct.x* %1, metadata !1, metadata !2)
@@ -821,7 +826,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
         // // store instruction
         else if (isa<StoreInst>(BI))
         {
-            instrumentStore(cast<StoreInst>(BI));
+            instrumentStore(&*BI);
         }
         // call and invoke
         else if (isaCallOrInvoke(&*BI))
@@ -988,17 +993,23 @@ void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 }
 
 
-void DiscoPoP::instrumentStore(StoreInst *toInstrument)
+void DiscoPoP::instrumentStore(Instruction *toInstrument)
 {
-
-    int32_t lid = getLID(toInstrument, fileID);
-    if (lid == 0) return;
+    int32_t lid;
+    Value *operand;
+    if(isa<DbgDeclareInst>(toInstrument)){
+        lid = 0;
+        operand = dyn_cast<DbgDeclareInst>(toInstrument)->getAddress();
+    }else{
+        lid = getLID(toInstrument, fileID);
+        if(lid == 0) return;
+        operand = dyn_cast<StoreInst>(toInstrument)->getPointerOperand();
+    }
 
     vector<Value *> args;
     args.push_back(ConstantInt::get(Int32, lid));
 
-    Value *memAddr = PtrToIntInst::CreatePointerCast(toInstrument->getPointerOperand(),
-                     Int64, "", toInstrument);
+    Value *memAddr = PtrToIntInst::CreatePointerCast(operand, Int64, "", toInstrument);
     args.push_back(memAddr);
 
     args.push_back(determineVarName(toInstrument));
