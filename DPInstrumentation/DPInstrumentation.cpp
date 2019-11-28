@@ -44,6 +44,8 @@
 
 #include "DPUtils.h"
 
+#include "../DPVariableNamePass/DPVariableNamePass.h"
+
 #include <set>
 #include <map>
 #include <cstdlib>
@@ -82,12 +84,7 @@ namespace
         // Helper functions
         bool isaCallOrInvoke(Instruction *BI);
         bool sanityCheck(BasicBlock *BB);
-        void collectDebugInfo();
-        void processStructTypes(string const &fullStructName, MDNode *structNode);
-        DIGlobalVariable *findDbgGlobalDeclare(GlobalVariable *V);
         Value *getOrInsertVarName(string varName, IRBuilder<> &builder);
-        Value *findStructMemberName(MDNode *structNode, unsigned idx, IRBuilder<> &builder);
-        Type *pointsToStruct(PointerType *PTy);
         Value *determineVarName(Instruction *const I);
 
         // Control flow analysis
@@ -124,13 +121,11 @@ namespace
         // Output streams
         ofstream ocfg;
 
+        map<string, Value *> VarNames;
         // Export Module M from runOnModule() to the whole structure space
         Module *ThisModule;
         LLVMContext *ThisModuleContext;
 
-        map<string, Value *> VarNames;
-        set<DIGlobalVariable *> GlobalVars;
-        map<string, MDNode *> Structs;
     };
 }  // namespace
 
@@ -235,16 +230,6 @@ bool DiscoPoP::doInitialization(Module &M)
     ThisModule = &M;
     ThisModuleContext = &(M.getContext());
 
-    for (set<DIGlobalVariable *>::iterator it = GlobalVars.begin(); it != GlobalVars.end(); ++it)
-    {
-        GlobalVars.erase(it);
-        // delete (*it);
-    }
-    
-    GlobalVars.clear();
-    Structs.clear();
-    collectDebugInfo();
-
     // Initialize variables needed
     setupDataTypes();
     setupCallbacks();
@@ -278,6 +263,7 @@ DiscoPoP::~DiscoPoP()
 void DiscoPoP::getAnalysisUsage(AnalysisUsage &Info) const
 {
     Info.addRequired<LoopInfoWrapperPass>();
+    Info.addRequired<DPVariableNamePass>();
 }
 
 //Helper functions
@@ -494,38 +480,6 @@ bool DiscoPoP::runOnFunction(Function &F)
     return true;
 }
 
-void DiscoPoP::collectDebugInfo()
-{
-    if (NamedMDNode *CU_Nodes = ThisModule->getNamedMetadata("llvm.dbg.cu"))
-    {
-        for (unsigned i = 0, e = CU_Nodes->getNumOperands(); i != e; ++i)
-        {
-            DICompileUnit *CU = cast<DICompileUnit>(CU_Nodes->getOperand(i));
-            // DICompileUnit CU(CU_Nodes->getOperand(i));
-            auto GVs = CU->getGlobalVariables();
-            for (unsigned i = 0, e = GVs.size(); i < e; ++i)
-            {
-                DIGlobalVariable *DIG = GVs[i]->getVariable();
-                if (DIG)
-                {
-                    GlobalVars.insert(DIG);
-                }
-            }
-        }
-    }
-}
-
-DIGlobalVariable *DiscoPoP::findDbgGlobalDeclare(GlobalVariable *v)
-{
-    assert(v && "Global variable cannot be null");
-    for (set<DIGlobalVariable *>::iterator it = GlobalVars.begin(); it != GlobalVars.end(); ++it)
-    {
-        if ((*it)->getDisplayName() == v->getName())
-            return *it;
-    }
-    return NULL;
-}
-
 Value *DiscoPoP::getOrInsertVarName(string varName, IRBuilder<> &builder)
 {
     Value *vName = NULL;
@@ -542,36 +496,6 @@ Value *DiscoPoP::getOrInsertVarName(string varName, IRBuilder<> &builder)
     return vName;
 }
 
-Value *DiscoPoP::findStructMemberName(MDNode *structNode, unsigned idx, IRBuilder<> &builder)
-{
-    assert(structNode);
-    assert(structNode->getOperand(10));
-    MDNode *memberListNodes = cast<MDNode>(structNode->getOperand(10));
-    if (idx < memberListNodes->getNumOperands())
-    {
-        assert(memberListNodes->getOperand(idx));
-        MDNode *member = cast<MDNode>(memberListNodes->getOperand(idx));
-        //return getOrInsertVarName(string(member->getOperand(3)->getName().data()), builder);
-        if (member->getOperand(3))
-            return getOrInsertVarName(dyn_cast<MDString>(member->getOperand(3))->getString(), builder);
-    }
-    return NULL;
-}
-
-Type *DiscoPoP::pointsToStruct(PointerType *PTy)
-{
-    assert(PTy);
-    Type *structType = PTy;
-    if (PTy->getTypeID() == Type::PointerTyID)
-    {
-        while(structType->getTypeID() == Type::PointerTyID)
-        {
-            structType = cast<PointerType>(structType)->getElementType();
-        }
-    }
-    return structType->getTypeID() == Type::StructTyID ? structType : NULL;
-}
-
 Value *DiscoPoP::determineVarName(Instruction *const I)
 {
     assert(I && "Instruction cannot be NULL \n");
@@ -586,114 +510,7 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
 
     IRBuilder<> builder(I);
 
-    if (operand == NULL)
-    {
-        return getOrInsertVarName("*", builder);
-    }
-
-    if (operand->hasName())
-    {
-        // we've found a global variable
-        if (isa<GlobalVariable>(*operand))
-        {
-            DIGlobalVariable *gv = findDbgGlobalDeclare(cast<GlobalVariable>(operand));
-            if (gv != NULL)
-            {
-                return getOrInsertVarName(string (gv->getDisplayName().data()), builder);
-            }
-        }
-        if (isa<GetElementPtrInst>(*operand))
-        {
-            GetElementPtrInst *gep = cast<GetElementPtrInst>(operand);
-            Value *ptrOperand = gep->getPointerOperand();
-            PointerType *PTy = cast<PointerType>(ptrOperand->getType());
-
-            // we've found a struct/class
-            Type *structType = pointsToStruct(PTy);
-            if (structType && gep->getNumOperands() > 2)
-            {
-                Value *constValue = gep->getOperand(2);
-                if (constValue && isa<ConstantInt>(*constValue))
-                {
-                    ConstantInt *idxPtr = cast<ConstantInt>(gep->getOperand(2));
-                    uint64_t memberIdx = *(idxPtr->getValue().getRawData());
-
-                    string strName(structType->getStructName().data());
-                    map<string, MDNode *>::iterator it = Structs.find(strName);
-                    if (it != Structs.end())
-                    {
-                        Value *ret = findStructMemberName(it->second, memberIdx, builder);
-                        if (ret)
-                            return ret;
-                    }
-                }
-            }
-
-            // we've found an array
-            if (PTy->getElementType()->getTypeID() == Type::ArrayTyID && isa<GetElementPtrInst>(*ptrOperand))
-            {
-                return determineVarName((Instruction *)ptrOperand);
-            }
-            return determineVarName((Instruction *)gep);
-        }
-        return getOrInsertVarName(string(operand->getName().data()), builder);
-    }
-
-    if (isa<LoadInst>(*operand) || isa<StoreInst>(*operand))
-    {
-        return determineVarName((Instruction *)(operand));
-    }
-    // if we cannot determine the name, then return *
-    return getOrInsertVarName("*", builder);
-}
-
-void DiscoPoP::processStructTypes(string const &fullStructName, MDNode *structNode)
-{
-    assert(structNode && "structNode cannot be NULL");
-    DIType *strDes = cast<DIType>(structNode);
-    // DIType strDes(structNode);
-    assert(strDes->getTag() == dwarf::DW_TAG_structure_type);
-    // sometimes it's impossible to get the list of struct members (e.g badref)
-    if (structNode->getNumOperands() <= 10 || structNode->getOperand(10) == NULL)
-    {
-        errs() << "cannot process member list of this struct: \n";
-        structNode->dump();
-        return;
-    }
-    Structs[fullStructName] = structNode;
-
-    MDNode *memberListNodes = cast<MDNode>(structNode->getOperand(10));
-    for (unsigned i = 0; i < memberListNodes->getNumOperands(); ++i)
-    {
-        assert(memberListNodes->getOperand(i));
-        MDNode *member = cast<MDNode>(memberListNodes->getOperand(i));
-        DINode *memberDes = cast<DINode>(member);
-        // DIDescriptor memberDes(member);
-        if (memberDes->getTag() == dwarf::DW_TAG_member)
-        {
-            assert(member->getOperand(9));
-            MDNode *memberType = cast<MDNode>(member->getOperand(9));
-            DIType *memberTypeDes = cast<DIType>(memberType);
-            // DIType memberTypeDes(memberType);
-            if (memberTypeDes->getTag() == dwarf::DW_TAG_structure_type)
-            {
-                string fullName = "";
-                // try to get namespace
-                if (memberType->getNumOperands() > 2 && structNode->getOperand(2) != NULL)
-                {
-                    MDNode *namespaceNode = cast<MDNode>(structNode->getOperand(2));
-                    DINamespace *dins = cast<DINamespace>(namespaceNode);
-                    // DINameSpace dins(namespaceNode);
-                    fullName = "struct." + string(dins->getName().data()) + "::";
-                }
-                //fullName += string(memberType->getOperand(3)->getName().data());
-                fullName += (dyn_cast<MDString>(memberType->getOperand(3)))->getString();
-
-                if (Structs.find(fullName) == Structs.end())
-                    processStructTypes(fullName, memberType);
-            }
-        }
-    }
+    return getOrInsertVarName(getAnalysis<DPVariableNamePass>().getVarName(I), builder);
 }
 
 /* metadata format in LLVM IR:
@@ -741,82 +558,6 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
         {
             assert(DI->getOperand(0));
             instrumentStore(DI);
-            //MDNode* node = cast<MDNode>(DI->getOperand(0));
-            // llvm.dbg.declare changes from LLVM 3.3 to 3.6.1:
-            // LLVM 3.6.1: call @llvm.dbg.declare(metadata %struct.x* %1, metadata !1, metadata !2)
-            // LLVM 3.3:   call @llvm.dbg.declare(metadata !{%struct.x* %1}, metadata !1, metadata !2)
-            // diff: operand 0 changes from MDNode* to Value*
-            if (AllocaInst *alloc = dyn_cast<AllocaInst>(DI->getOperand(0)))
-            {
-                Type *type = alloc->getAllocatedType();
-                Type *structType = type;
-                unsigned depth = 0;
-                if (type->getTypeID() == Type::PointerTyID)
-                {
-                    while(structType->getTypeID() == Type::PointerTyID)
-                    {
-                        structType = cast<PointerType>(structType)->getElementType();
-                        ++depth;
-                    }
-                }
-                if (structType->getTypeID() == Type::StructTyID)
-                {
-                    assert(DI->getOperand(1));
-                    // LLVM 3.6.1:
-                    // DbgDeclareInst *DI->getOperand(1) ==> MDNode* getVariable()
-                    //                *DI->getOperand(2) ==> MDNode* getExpression()
-                    // Methods Metadata* getRawVariable() and Metadata* getRawExpression() are listed on
-                    // LLVM online document, but do not exist in source code of 3.6.1.
-                    MDNode *varDesNode = DI->getVariable();
-                    assert(varDesNode->getOperand(5));
-                    MDNode *typeDesNode = cast<MDNode>(varDesNode->getOperand(5));
-                    MDNode *structNode = typeDesNode;
-                    if (type->getTypeID() == Type::PointerTyID)
-                    {
-                        MDNode *ptr = typeDesNode;
-                        for (unsigned i = 0; i < depth; ++i)
-                        {
-                            assert(ptr->getOperand(9));
-                            ptr = cast<MDNode>(ptr->getOperand(9));
-                        }
-                        structNode = ptr;
-                    }
-                    DINode *strDes = cast<DINode>(structNode);
-                    // DIDescriptor strDes(structNode);
-                    // handle the case when we have pointer to struct (or pointer to pointer to struct ...)
-                    if (strDes->getTag() == dwarf::DW_TAG_pointer_type)
-                    {
-                        DINode *ptrDes = strDes;
-                        // DIDescriptor* ptrDes = &strDes;
-                        do
-                        {
-                            if (structNode->getNumOperands() < 10)
-                                break;
-                            assert(structNode->getOperand(9));
-                            structNode = cast<MDNode>(structNode->getOperand(9));
-                            ptrDes = cast<DINode>(structNode);
-                            // ptrDes = new DIDescriptor(structNode);
-                        }
-                        while (ptrDes->getTag() != dwarf::DW_TAG_structure_type);
-                    }
-
-                    if (strDes->getTag() == dwarf::DW_TAG_typedef)
-                    {
-                        assert(strDes->getOperand(9));
-                        structNode = cast<MDNode>(strDes->getOperand(9));
-                    }
-                    strDes = cast<DINode>(structNode);
-                    // strDes = DIDescriptor(structNode);
-                    if (strDes->getTag() == dwarf::DW_TAG_structure_type)
-                    {
-                        string strName(structType->getStructName().data());
-                        if (Structs.find(strName) == Structs.end())
-                        {
-                            processStructTypes(strName, structNode);
-                        }
-                    }
-                }
-            }
         }
         // load instruction
         else if (isa<LoadInst>(BI))

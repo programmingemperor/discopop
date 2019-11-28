@@ -119,7 +119,5 @@ namespace dputil
 
     string get_exe_dir();
 
-    string getVarName(Instruction *I);
-
 } // namespace
 #endif
