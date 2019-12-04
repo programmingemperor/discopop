@@ -11,7 +11,10 @@ StringRef DPInstrumentationOmission::getPassName() const{
   return "DPInstrumentationOmission";
 }
 
-void DPInstrumentationOmission::getAnalysisUsage(AnalysisUsage &AU) const {}
+void DPInstrumentationOmission::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<AAResultsWrapperPass>();
+}
 
 bool DPInstrumentationOmission::runOnFunction(Function &F) {
   DebugLoc dl;

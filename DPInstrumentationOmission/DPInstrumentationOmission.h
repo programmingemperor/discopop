@@ -22,6 +22,10 @@ using namespace std;
 
 namespace {
     class DPInstrumentationOmission : public FunctionPass {
+    private:
+        PDG *DG, *CFG;
+        AAResults *AAR;
+    
     public:
         static char ID;
         StringRef getPassName() const;
