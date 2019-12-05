@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include <utility>
 #include <string.h>
+#include <regex>
 #include "DPUtils.h"
 
 namespace __dp
@@ -87,6 +88,7 @@ namespace __dp
 
     typedef std::set<Dep, compDep> depSet;
     typedef std::unordered_map<LID, depSet *> depMap;
+    typedef std::unordered_map<std::string, std::set<std::string>> stringDepMap;
 
     // For loop tracking
     struct LoopTableEntry
@@ -123,6 +125,8 @@ namespace __dp
 
     typedef std::set<LID> ENDFuncList;
 
+    typedef std::set<int32_t> ReportedBBList;
+
     /******* Helper functions *******/
 
     void addDep(depType type, LID curr, LID depOn, char *var);
@@ -131,7 +135,6 @@ namespace __dp
     void outputFuncs();
     void readRuntimeInfo();
     void initParallelization();
-    void mergeDeps();
     void *analyzeDeps(void *arg);
     void addAccessInfo(bool isRead, LID lid, char *var, ADDR addr);
     void finalizeParallelization();
@@ -145,6 +148,8 @@ namespace __dp
         void __dp_read(LID lid, ADDR addr, char *var);
         void __dp_write(LID lid, ADDR addr, char *var);
 #endif
+        void __dp_report_bb(int32_t bbIndex);
+        void __dp_add_omission_deps(char* jsonDeps);
         void __dp_finalize(LID lid);
         void __dp_call(LID lid);
         void __dp_func_entry(LID lid, int32_t isStart);

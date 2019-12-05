@@ -119,5 +119,27 @@ namespace dputil
 
     string get_exe_dir();
 
+    class VariableNameFinder{
+    private:
+        map<string, vector<string>> StructMemberMap;
+    public:
+        VariableNameFinder(Module &M){
+            DebugInfoFinder DIF;
+            DIF.processModule(M);
+            for (auto DI: DIF.types()) {
+                if(auto CT = dyn_cast<DICompositeType>(DI)){
+                vector<string> v;
+                for(auto E: CT->getElements()){
+                    if(auto DT = dyn_cast<DIDerivedType>(E)){
+                    v.push_back(DT->getName());
+                    }
+                }
+                StructMemberMap.insert({CT->getName(), v});
+                }
+            }
+        }
+
+        string getVarName(Value const *V);
+    };
 } // namespace
 #endif

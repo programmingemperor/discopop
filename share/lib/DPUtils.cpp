@@ -183,4 +183,93 @@ string get_exe_dir() {
     }
 }
 
+
+string VariableNameFinder::getVarName(Value const *V){
+    if(const Instruction *I = dyn_cast<Instruction>(V)){
+        if(isa<AllocaInst>(I)){
+            if(V->hasName()){
+            string r = V->getName().str();
+            std::size_t found = r.find(".addr");
+            if(found != string::npos){
+                return r.erase(found);
+            }
+            return r;
+            }
+            return "!";
+        }
+
+        if(auto GEPI = dyn_cast<GetElementPtrInst>(I)){
+            string r = getVarName(GEPI->getOperand(0));
+            Type *srcElemT = GEPI->getSourceElementType();
+
+            if(isa<ArrayType>(srcElemT)){
+                for(uint i = 2; i < GEPI->getNumOperands(); ++i){
+                    if(isa<Instruction>(GEPI->getOperand(i))){
+                    r += "[" + getVarName((Instruction*)GEPI->getOperand(i)) + "]";
+                    }else if(isa<ConstantInt>(GEPI->getOperand(i))){
+                    r += "[" + to_string(((ConstantInt*) GEPI->getOperand(i))->getSExtValue()) + "]";
+                    }
+                }
+            }else if(StructType *st = dyn_cast<StructType>(srcElemT)){
+                int64_t index = 0;
+                for(uint i = 2; i < GEPI->getNumOperands(); ++i){
+                    if(auto iter = dyn_cast<ConstantInt>(GEPI->getOperand(i))){
+                    index = iter->getSExtValue();
+                    }
+                }
+                if(st->hasName()){
+                    string structTypeName = st->getName().str();
+                    if(structTypeName.find("struct.") != string::npos){
+                        structTypeName = structTypeName.erase(0,7);
+                    }
+                    if(structTypeName.find("class.") != string::npos){
+                        structTypeName = structTypeName.erase(0,6);
+                    }
+                    if(StructMemberMap.count(structTypeName) > 0){
+                        r += "." + StructMemberMap[structTypeName][index];
+                        return r;
+                    }
+                }
+                r += ".[" + to_string(index) + "]";
+                return r;
+            }
+
+            return r;
+        }
+
+        if(isa<StoreInst>(I) || isa<LoadInst>(I)){
+            string r;
+            Value *v = I->getOperand(isa<StoreInst>(I) ? 1 : 0);
+            if(v->hasName()){
+                return getVarName(v);
+            }else{
+                return "*" + getVarName(v);
+            }
+        }
+    }else if (const GEPOperator* gepo = dyn_cast<GEPOperator>(V)){
+        if (const GlobalVariable* gv = dyn_cast<GlobalVariable>(gepo->getPointerOperand()))
+        {
+            string r = gv->getGlobalIdentifier();
+            Type *st = gepo->getSourceElementType();
+            if(StructType *ct = dyn_cast<StructType>(st)){
+            string structTypeName = ct->getName().str().erase(0,7);
+            int64_t index = 0;
+            for (auto it = gepo->idx_begin(), et = gepo->idx_end(); it != et; ++it){
+                if(auto iter = dyn_cast<ConstantInt>(*it)){
+                index = iter->getSExtValue();
+                }
+            }
+            r += "." + StructMemberMap[structTypeName][index];
+            return r;
+            }
+            
+        }
+    }
+    
+    if(V->hasName()){
+        return V->getName().str();
+    }
+    return "n/a";
+}
+
 }//namespace

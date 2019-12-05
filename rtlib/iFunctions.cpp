@@ -49,12 +49,15 @@ namespace __dp
 
     // Runtime merging structures
     depMap allDeps;
+    stringDepMap outPutDeps;
     LoopTable *loopStack = nullptr;     // loop stack tracking
     LoopRecords *loops = nullptr;       // loop merging
     BGNFuncList *beginFuncs = nullptr;  // function entries
     ENDFuncList *endFuncs = nullptr;    // function returns
+    ReportedBBList *bbList = nullptr;
     ofstream *out;
     ofstream *outInsts;
+    
 
     LID lastCallOrInvoke = 0;
     LID lastProcessedLine = 0;
@@ -119,41 +122,59 @@ namespace __dp
         }
     }
 
-    void outputDeps()
-    {
-        // print out all dps
+    void generateStringDepMap(){
         for (auto &dline : allDeps)
         {
             if (dline.first)
             {
-                *out << decodeLID(dline.first) << " NOM ";
+                string lid = decodeLID(dline.first);
+                set<string> lineDeps;
                 for(auto &d : * (dline.second))
                 {
-                    *out << " ";
+                    string dep = "";
                     switch(d.type)
                     {
                     case RAW:
-                        *out << "RAW";
+                        dep += "RAW";
                         break;
                     case WAR:
-                        *out << "WAR";
+                        dep += "WAR";
                         break;
                     case WAW:
-                        *out << "WAW";
+                        dep += "WAW";
                         break;
                     case INIT:
-                        *out << "INIT";
+                        dep += "INIT";
                         break;
                     default:
                         break;
                     }
-                    *out << " " << decodeLID(d.depOn);
+                    
+                    dep += " " + decodeLID(d.depOn);
                     //if (d.type != INIT)
-                    *out << "|" << d.var;
+                    dep += "|" + string(d.var);
+                    lineDeps.insert(dep);
                 }
-                *out << endl;
+                
+                if(outPutDeps.count(lid) == 0){
+                    outPutDeps[lid] = lineDeps;
+                }else{
+                    outPutDeps[lid].insert(lineDeps.begin(), lineDeps.end());
+                }
+                
                 delete dline.second;
             }
+        }        
+    }
+
+    void outputDeps()
+    {
+        for(auto pair: outPutDeps){
+            *out << pair.first << " NOM ";
+            for(auto dep: pair.second){
+                *out << " " << dep;
+            }
+            *out << endl;
         }
     }
 
@@ -260,7 +281,7 @@ namespace __dp
         // initialize global variables
         addrChunkPresentConds = new pthread_cond_t[NUM_WORKERS];
         addrChunkMutexes = new pthread_mutex_t[NUM_WORKERS];
-
+        bbList = new ReportedBBList();
         chunks = new queue<AccessInfo *>[NUM_WORKERS];
         addrChunkPresent = new bool[NUM_WORKERS];
         tempAddrChunks = new AccessInfo*[NUM_WORKERS];
@@ -619,6 +640,11 @@ namespace __dp
                 tempAddrCount[workerID] = 0;
             }
         }
+        
+        void __dp_report_bb(int32_t bbIndex)
+        {
+            bbList->insert(bbIndex);
+        }
 
         void __dp_finalize(LID lid)
         {
@@ -648,6 +674,7 @@ namespace __dp
             finalizeParallelization();
             outputLoops();
             outputFuncs();
+            generateStringDepMap();
             outputDeps();
 
             delete loopStack;
@@ -676,6 +703,33 @@ namespace __dp
             {
                 cout << "Program terminated." << endl;
             }
+        }
+
+        void __dp_add_omission_deps(char* pathToDepFile){
+            ifstream stream(pathToDepFile);
+            if(stream.is_open()){
+                string line;
+                regex r1("[^,]+"), r2("[0-9]+:[0-9]+"), r3("[R|W]A[R|W].*");
+                smatch res1, res2;
+
+                while ( getline (stream,line) ){
+                    while (regex_search(line, res1, r1)) {
+                        string s(res1[0]);
+                        regex_search(s, res2, r2);
+                        string k(res2[0]);
+                        regex_search(s, res2, r3);
+                        string v(res2[0]);
+                        if(outPutDeps.count(k) == 0){
+                            set<string> depSet;
+                            outPutDeps[k] = depSet;
+                        }
+                        outPutDeps[k].insert(v);
+                        cout << "Added: " << k << " " << v << endl;
+                        line = res1.suffix();
+                    }
+                }
+            }
+            
         }
 
         void __dp_call(LID lid)

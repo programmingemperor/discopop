@@ -3,34 +3,58 @@
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/IR/InstIterator.h"
-#include "llvm/IR/DebugInfoMetadata.h"
-#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/IR/IntrinsicInst.h"
 
 #include "llvm/PassAnalysisSupport.h"
 #include "llvm/PassSupport.h"
 #include "llvm/IR/DerivedTypes.h"
 
-#include <set>
+#include "InstructionGraph.h"
+
+#include "DPUtils.h"
+
 
 using namespace llvm;
 using namespace std;
+using namespace dputil;
 
 namespace {
     class DPInstrumentationOmission : public FunctionPass {
     private:
-        PDG *DG, *CFG;
+        string fileName;
         AAResults *AAR;
-    
+        InstructionGraph *DG, *CFG;
+        set<Instruction*> omittableInstructions;
+        int32_t fid;
+        vector<set<string>> conditionalBBDeps;
+        Type *Void;
+        IntegerType *Int32;
+        PointerType *CharPtr;
+        Function *ReportBB;
+        dputil::VariableNameFinder *VNF;
+
+        void depFinder();
+        void depFinderHelper1(vector<Instruction*>* checkedInstructions, Instruction* I);
+        void depFinderHelper2(vector<Instruction*>* checkedInstructions, Instruction* I, Instruction* C);
+
+        string edgeToDPDep(Edge<Instruction*, bool> *e);
+
     public:
         static char ID;
         StringRef getPassName() const;
-        bool runOnFunction(Function &F);
+        bool runOnFunction(Function &M);
         void getAnalysisUsage(AnalysisUsage &AU) const;
+        bool doInitialization(Module &M);
+        bool doFinalization(Module &M);
 
         DPInstrumentationOmission() : FunctionPass(ID) {}
     };

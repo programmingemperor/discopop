@@ -10,7 +10,7 @@
  *
  */
 
-#define DEBUG_TYPE "dpop"
+#define DEBUG_TYPE "dp-omissions"
 //#define SKIP_DUP_INSTR 1
 
 #include "llvm/Transforms/Instrumentation.h"
@@ -43,8 +43,6 @@
 #include "llvm/IR/LegacyPassManager.h"
 
 #include "DPUtils.h"
-
-#include "../DPVariableNamePass/DPVariableNamePass.h"
 
 #include <set>
 #include <map>
@@ -122,6 +120,7 @@ namespace
         ofstream ocfg;
 
         map<string, Value *> VarNames;
+        VariableNameFinder *VNF;
         // Export Module M from runOnModule() to the whole structure space
         Module *ThisModule;
         LLVMContext *ThisModuleContext;
@@ -248,6 +247,7 @@ bool DiscoPoP::doInitialization(Module &M)
     {
         loopID = -1;
     }
+    VNF = new VariableNameFinder(M);
     return true;
 }
 
@@ -263,7 +263,6 @@ DiscoPoP::~DiscoPoP()
 void DiscoPoP::getAnalysisUsage(AnalysisUsage &Info) const
 {
     Info.addRequired<LoopInfoWrapperPass>();
-    Info.addRequired<DPVariableNamePass>();
 }
 
 //Helper functions
@@ -417,7 +416,7 @@ bool DiscoPoP::runOnFunction(Function &F)
 {
     if (DP_DEBUG)
     {
-        errs() << "pass DiscoPoP: run pass on function\n";
+        errs() << "pass DiscoPoP: run pass on function " << F.getName() << "\n";
     }
 
     StringRef funcName = F.getName();
@@ -475,7 +474,7 @@ bool DiscoPoP::runOnFunction(Function &F)
 
     if (DP_DEBUG)
     {
-        errs() << "pass DiscoPoP: finished function\n";
+        errs() << "pass DiscoPoP: finished function " << F.getName() << "\n";
     }
     return true;
 }
@@ -498,6 +497,7 @@ Value *DiscoPoP::getOrInsertVarName(string varName, IRBuilder<> &builder)
 
 Value *DiscoPoP::determineVarName(Instruction *const I)
 {
+    if(DP_DEBUG) errs() << "determineVarName: " << *I << "\n";
     assert(I && "Instruction cannot be NULL \n");
     Value *operand;
     if (DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(I)){
@@ -510,7 +510,7 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
 
     IRBuilder<> builder(I);
 
-    return getOrInsertVarName(getAnalysis<DPVariableNamePass>().getVarName(I), builder);
+    return getOrInsertVarName(VNF->getVarName(I), builder);
 }
 
 /* metadata format in LLVM IR:
@@ -552,6 +552,7 @@ A real case would be:
 // TODO: atomic variables
 void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
 {
+    if(DP_DEBUG) errs() << "runOnBasicBlock: " << BB.getName() << "\n";
     for (BasicBlock::iterator BI = BB.begin(), E = BB.end(); BI != E; ++BI)
     {
         if (DbgDeclareInst *DI = dyn_cast<DbgDeclareInst>(BI))
@@ -668,7 +669,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
 // Instrumentation function inserters.
 void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 {
-
+    if(DP_DEBUG) errs () << "instrumentLoad: " << *toInstrument << "\n";
     int32_t lid = getLID(toInstrument, fileID);
     if (lid == 0) return;
 
@@ -736,6 +737,7 @@ void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 
 void DiscoPoP::instrumentStore(Instruction *toInstrument)
 {
+    if(DP_DEBUG) errs () << "instrumentStore: " << *toInstrument << "\n";
     int32_t lid;
     Value *operand;
     if(isa<DbgDeclareInst>(toInstrument)){
@@ -839,7 +841,7 @@ void DiscoPoP::instrumentFuncEntry(Function &F)
             IRB.CreateCall(DpFuncEntry, arguments);
             if (DP_DEBUG)
             {
-                errs() << "DiscoPoP: funcEntry instrumented\n";
+                errs() << "DiscoPoP: funcEntry instrumented on " << fn << "\n";
             }
             break;
         }
