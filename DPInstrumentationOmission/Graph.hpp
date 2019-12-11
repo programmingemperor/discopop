@@ -22,17 +22,11 @@ class Node
 {
 private:
 	NodeT item;
-	string dot;
 public:
 	Node(NodeT _item) 
 		: item(_item) {}
-	Node(NodeT _item, string _dot) 
-		: item(_item)
-		, dot(_dot) {}
 	~Node() {};
 	
-	string getDot() const { return dot; }
-	void setDot(string _dot) { dot = _dot; }
 	NodeT getItem() const { return item; }
 };
 
@@ -42,20 +36,17 @@ class Edge
 private:
 	Node<NodeT> *src;
 	Node<NodeT> *dst;
-	string dot;
 	EdgeT e;
 
 public:
-	Edge(Node<NodeT> *_src, Node<NodeT> *_dst, EdgeT _e, string _dot)
+	Edge(Node<NodeT> *_src, Node<NodeT> *_dst, EdgeT _e)
 		: src(_src)
 		, dst(_dst)
-		, e(_e)
-		, dot(_dot) {}
+		, e(_e){};
 	~Edge() {};
 
 	Node<NodeT> *getSrc() const { return src; }
 	Node<NodeT> *getDst() const { return dst; }
-	string getDot() const { return dot; }
 	EdgeT get(){ return e; }
 };
 
@@ -83,11 +74,11 @@ public:
 
 	Node<NodeT> *operator[](NodeT item) const { return getNode(item); }
 
-	virtual Node<NodeT> *addNode(NodeT item, string dot = "")
+	Node<NodeT> *addNode(NodeT item)
 	{
 		if (nodes.count(item) == 0)
 		{
-			Node<NodeT> *node = new Node<NodeT>(item, dot);
+			Node<NodeT> *node = new Node<NodeT>(item);
 			nodes[item] = std::make_pair<int,  Node<NodeT>* >(nextIntKey, std::move(node));
 			nodesList.push_back(node);
 			nextIntKey++;
@@ -137,26 +128,30 @@ public:
 		return nodesList;
 	}
 
-	virtual Edge<NodeT, EdgeT> *addEdge(Node<NodeT> *src, Node<NodeT> *dst, EdgeT e, string dot = "")
+	Edge<NodeT, EdgeT> *addEdge(Node<NodeT> *src, Node<NodeT> *dst, EdgeT e)
 	{
 		for(Edge<NodeT, EdgeT> *ed : outEdges[src]){
 			if(ed->getDst() == dst && ed->get() == e){
 				return nullptr;
 			}
 		}
-		Edge<NodeT, EdgeT> *edge = new Edge<NodeT, EdgeT>(src, dst, e, dot);
+
+		Edge<NodeT, EdgeT> *edge = new Edge<NodeT, EdgeT>(src, dst, e);
 		outEdges[src].insert(edge);
 		inEdges[dst].insert(edge);
 		edgesList.push_back(edge);
 		return edge;
 	}
 
-	virtual Edge<NodeT, EdgeT> *addEdge(NodeT src, NodeT dst, EdgeT e, string dot = "")
+	Edge<NodeT, EdgeT> *addEdge(NodeT src, NodeT dst, EdgeT e)
 	{
 		Node<NodeT> *src_ = getNode(src);
 		Node<NodeT> *dst_ = getNode(dst);
 
-		return addEdge(src_, dst_, e, dot);
+		if(src_ == nullptr) src_ = addNode(src);
+		if(dst_ == nullptr) dst_ = addNode(dst);
+
+		return addEdge(src_, dst_, e);
 	}
 
 	std::set<Edge<NodeT, EdgeT>*> getInEdges(Node<NodeT> *node) 
@@ -202,34 +197,6 @@ public:
 	}
 
 	int size() const { return nextIntKey; }
-
-	void dumpToDot(std::string targetPath)
-	{
-		// Write the graph to a DOT file
-		ofstream dotStream;
-		dotStream.open(targetPath);
-		
-		dotStream << "digraph g {\n";
-		// Create all nodes in DOT format
-		for (auto node : getNodes())
-		{
-			dotStream << "\t\"" << getNodeIndex(node) 
-				<< "\" [" << node->getDot() << "];\n"
-			;
-		}
-		dotStream << "\n\n";
-		
-		// Now print all outgoing edges and their labels
-		for (auto e : getEdges())
-		{	
-			dotStream << "\t\"" << getNodeIndex(e->getSrc()) 
-				<< "\" -> \"" << getNodeIndex(e->getDst()) 
-				<< "\" [" << e->getDot() << "];\n"
-			;
-		}
-		dotStream << "}";
-		dotStream.close();
-	}
 };
 
 #endif // GRAPH_HPP

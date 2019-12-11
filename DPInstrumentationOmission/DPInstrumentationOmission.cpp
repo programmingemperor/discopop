@@ -1,7 +1,6 @@
 #include "DPInstrumentationOmission.h"
-#include <filesystem>
-namespace fs = std::filesystem;
-#define DEBUG_TYPE "dpop"
+
+#define DEBUG_TYPE "dp-omissions"
 
 #define DP_DEBUG false
 
@@ -41,54 +40,15 @@ string DPInstrumentationOmission::edgeToDPDep(Edge<Instruction*, bool> *e){
     ;
 }
 
-void DPInstrumentationOmission::depFinder(){
-  vector<Instruction*>* checkedInstructions = new vector<Instruction*>();
-  for(auto edge: CFG->getInEdges(CFG->getExit()))
-    depFinderHelper1(checkedInstructions, edge->getSrc()->getItem());
-}
-
-void DPInstrumentationOmission::depFinderHelper1(vector<Instruction*>* checkedInstructions, Instruction* I){
-  if(CFG->isEntryOrExit(I)) return;
-  checkedInstructions->push_back(I);
-  for(auto edge: CFG->getInEdges(I)){
-    if((isa<StoreInst>(I) || isa<LoadInst>(I)) && omittableInstructions.find(I) == omittableInstructions.end())
-      depFinderHelper2(new vector<Instruction*>(), I, edge->getSrc()->getItem());
-    if(find(checkedInstructions->begin(), checkedInstructions->end(), edge->getSrc()->getItem()) == checkedInstructions->end())
-      depFinderHelper1(checkedInstructions, edge->getSrc()->getItem());
-  }
-}
-
-void DPInstrumentationOmission::depFinderHelper2(vector<Instruction*>* checkedInstructions, Instruction* I, Instruction* C){
-  checkedInstructions->push_back(C);
-  if(CFG->isEntryOrExit(C)) return;
-
-  if (DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(C))
-    if(DbgDeclare->getAddress() == I->getOperand(isa<StoreInst>(I) ? 1 : 0))
-      return;
-  else if (DbgValueInst* DbgValue = dyn_cast<DbgValueInst>(C))
-    if(DbgValue->getValue() == I->getOperand(isa<StoreInst>(I) ? 1 : 0))
-      return;
-  AliasResult AR = AAR->alias(I->getOperand(isa<StoreInst>(I) ? 1 : 0), C->getOperand(isa<StoreInst>(C) ? 1 : 0));
-  if((isa<StoreInst>(I) || isa<StoreInst>(C)) && AR != NoAlias){
-    DG->addEdge(I, C, AR == MustAlias);
-    if(AR == MustAlias)
-      return;
-  }
-  for(auto edge: CFG->getInEdges(C))
-    if(find(checkedInstructions->begin(), checkedInstructions->end(), edge->getSrc()->getItem()) == checkedInstructions->end())
-      depFinderHelper2(checkedInstructions, I, edge->getSrc()->getItem());
-}
-
-
 bool DPInstrumentationOmission::runOnFunction(Function &F) {
   if(DP_DEBUG) errs() << "\n---------- Omission Analysis on " << F.getName() << " ----------\n";
 
   DebugLoc dl;
   Value *v;
-  AAR = &getAnalysis<AAResultsWrapperPass>().getAAResults();
+  AAResults* AAR = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   DominatorTree& DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-  DG = new InstructionGraph(VNF);
-  CFG = new InstructionGraph(VNF, true);
+  
+  set<Instruction*> omittableInstructions;
 
   determineFileID(F, fid);
 
@@ -132,88 +92,33 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
   for (inst_iterator I = inst_begin(F), SrcE = inst_end(F); I != SrcE; ++I) {
     if(isa<StoreInst>(&*I) || isa<LoadInst>(&*I)){
       dl = I->getDebugLoc();
-      CFG->addNode(&*I);
-      DG->addNode(&*I);
       v = I->getOperand(isa<StoreInst>(&*I) ? 1 : 0);
       if(
         localValues.find(v) != localValues.end() && writtenValues.find(v) == writtenValues.end()
         || v->getName() == "retval"
+        || AAR->pointsToConstantMemory(v)
       ) omittableInstructions.insert(&*I);
     }
   }
   
-  map<BasicBlock*, set<string>> conditionalDepMap;
   // Perform the predictable dependence analysis
   if(DPOmissionsDepAnalysis){
-    // Create Store/Load-CFG
-    std::function<void(BasicBlock*,Instruction*)> add_first_successor_store_load_instructions;
-    add_first_successor_store_load_instructions = [&](BasicBlock *BB, Instruction* previousInstruction)
-    {
-      bool hasSuccessors = false;
-      for (BasicBlock *S : successors(BB)) {
-        hasSuccessors = true;
-        for (Instruction &I : *S){
-          DebugLoc dl = I.getDebugLoc();
-          if(!dl) continue;
-          if(isa<StoreInst>(I) || isa<LoadInst>(I)){
-            CFG->addEdge(previousInstruction, &I, false);
-            goto next;
-          }else if(isa<DbgDeclareInst>(&I)){
-            CFG->addEdge(previousInstruction, &I, false);
-            goto next;
-          }
-        }
-        if(S != BB) 
-          add_first_successor_store_load_instructions(S, previousInstruction);
-        next:;
-      }
-      if(BB->getName().find("for.end") != string::npos && !hasSuccessors){
-        CFG->connectToExit(previousInstruction);
-      }
-    };
-    Instruction *previousInstruction;
-    for (BasicBlock &BB : F){
-      // Add current block's store/load-instructions and declarations to graph
-      previousInstruction = nullptr;
-      for (Instruction &I : BB){
-        dl = I.getDebugLoc();
-        if(!dl) continue;
-        DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(&I);
-        if(isa<StoreInst>(I) || isa<LoadInst>(I) || DbgDeclare){
-          if(previousInstruction != nullptr){
-              CFG->addEdge(previousInstruction, &I, false);
-          }
-          previousInstruction = &I;
-        }
-      }
-      // Add edges from last instruction in current block to first instruction all the successor blocks
-      if(previousInstruction != nullptr){
-        add_first_successor_store_load_instructions(&BB, previousInstruction);
-      }
-    }
-    // Conect exit nodes
-    for(auto node : CFG->getNodes()){
-      if(node != CFG->getEntry() && node != CFG->getExit()){
-        if(CFG->getInEdges(node).empty()){
-          CFG->connectToEntry(node->getItem());
-        }else if(CFG->getOutEdges(node).empty()){
-          CFG->connectToExit(node->getItem());
-        }
-      }
-    }
-    depFinder();
+
+    map<BasicBlock*, set<string>> conditionalDepMap;
+    InstructionCFG CFG(VNF, F);
+    InstructionDG DG(VNF, &CFG, AAR);
     Instruction *I, *J;
 
-    for(auto node : DG->getNodes()){
+    for(auto node : DG.getNodes()){
       if(I = node->getItem()){
         set<string> tmpDeps;
-        for(auto edge: DG->getOutEdges(node)){
+        for(auto edge: DG.getOutEdges(node)){
           if(J = edge->getDst()->getItem()){
             if(I == J || !DT.dominates(J, I) || !edge->get()) goto next; // if 1 dep is not predictable, don't omit instr
             tmpDeps.insert(edgeToDPDep(edge));
           }
         }
-        for(auto edge: DG->getInEdges(node)){
+        for(auto edge: DG.getInEdges(node)){
           if(J = edge->getSrc()->getItem()){
             if(I == J || !DT.dominates(I, J) || !edge->get()) goto next; // if 1 dep is not predictable, don't omit instr
             tmpDeps.insert(edgeToDPDep(edge));
@@ -231,13 +136,28 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
       }
     }
     for(auto pair: conditionalDepMap){
-      CallInst::Create(ReportBB, ConstantInt::get(Int32, conditionalBBDeps.size()), "", pair.first->getTerminator());
+      // CallInst::Create(ReportBB, ConstantInt::get(Int32, conditionalBBDeps.size()), "", pair.first->getTerminator());
       conditionalBBDeps.push_back(pair.second);
+    }
+
+    if(DPOmissionsDumpToDot){
+      CFG.dumpToDot(fileName + "_" + string(F.getName()) + ".CFG.dot");
+      if(DPOmissionsDepAnalysis)
+        DG.dumpToDot(fileName + "_" + string(F.getName()) + ".DG.dot");
+    }
+
+    if(DP_DEBUG){
+      errs() << "Conditional Dependences:\n";
+      for(auto pair : conditionalDepMap){
+        errs() << pair.first->getName() << ":\n";
+        for(auto s: pair.second){
+          errs() << "\t" << s << "\n";
+        }
+      }
     }
   }
 
   if(DP_DEBUG){
-    
     errs() << "Load/Store Instructions:\n";
     for (inst_iterator I = inst_begin(F), SrcE = inst_end(F); I != SrcE; ++I) {
       if(isa<StoreInst>(&*I) || isa<LoadInst>(&*I)){
@@ -250,49 +170,34 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
         errs() << "\n";
       }
     }
-    
-    errs() << "Conditional Dependences:\n";
-    for(auto pair : conditionalDepMap){
-      errs() << pair.first->getName() << ":\n";
-      for(auto s: pair.second){
-        errs() << "\t" << s << "\n";
-      }
-    }
   }
-
   // Remove omittable instructions from profiling
-  for(Instruction *I : omittableInstructions){
-    Instruction *prev = I->getPrevNode();
+  for(Instruction* I : omittableInstructions){
+    Instruction* prev = I->getPrevNode();
     if(CallInst* call_inst = dyn_cast<CallInst>(prev)){
-      if(Function *Fun = call_inst->getCalledFunction()){
+      if(Function* Fun = call_inst->getCalledFunction()){
         string fn = Fun->getName();
-        if(fn == "__dp_write" || fn == "__dp_read" || fn == "@__dp_write" || fn == "@__dp_read"){
+        if(fn == "__dp_write" || fn == "__dp_read"){
           prev->eraseFromParent();
+          // call_inst->setArgOperand(0, ConstantInt::get(Int32, 0));
           ++removedInstrumentations;
         }
       }
     }
   }
 
-  if(DPOmissionsDumpToDot){
-    CFG->dumpToDot(fileName + "_" + string(F.getName()) + ".CFG.dot");
-    if(DPOmissionsDepAnalysis)
-      DG->dumpToDot(fileName + "_" + string(F.getName()) + ".DG.dot");
-  }
-
   return true;
 }
 
 bool DPInstrumentationOmission::doInitialization(Module &M){
-  std::cout << "Current path is " << fs::current_path() << '\n';
   Void = const_cast<Type *>(Type::getVoidTy(M.getContext()));
   Int32 = const_cast<IntegerType *>(IntegerType::getInt32Ty(M.getContext()));
   CharPtr = const_cast<PointerType *>(Type::getInt8PtrTy(M.getContext()));
   ReportBB = cast<Function>(M.getOrInsertFunction("__dp_report_bb", Void, Int32));
   VNF = new dputil::VariableNameFinder(M);
 
-  //TODO: get current working dir instead
-  fileName = M.getName();
+  fileName = M.getName().substr(M.getName().find_last_of("/\\") + 1);
+  //TODO: get full path to current working dir to init filePath
 
   // Find __dp_finalize call and add a __dp_add_omission_deps call before it
   for(Function &F : M){
@@ -302,14 +207,16 @@ bool DPInstrumentationOmission::doInitialization(Module &M){
         if(CallInst* call_inst = dyn_cast<CallInst>(&I)){
           if(Function *Fun = call_inst->getCalledFunction()){
             if(Fun->getName() == "__dp_finalize"){
+              /*
               IRBuilder<> builder(call_inst);
-              Value *v = builder.CreateGlobalStringPtr(StringRef(fileName + string("_dp_conditional_deps.txt")), ".dp_omission_deps");
+              Value *v = builder.CreateGlobalStringPtr(StringRef(filePath + "/" + fileName + "_dp_conditional_deps.txt"), ".dp_omission_deps");
               CallInst::Create(
                 cast<Function>(F.getParent()->getOrInsertFunction("__dp_add_omission_deps", Void, CharPtr)),
                 v,
                 "",
                 call_inst
               );
+              */
             }
           }
         }
@@ -322,10 +229,10 @@ bool DPInstrumentationOmission::doFinalization(Module &M){
   // Write conditional deps to a file to be read in post-processing
   if(!DPOmissionsDepAnalysis) return false;
   ofstream stream;
-  stream.open(fileName + string("_dp_conditional_deps.txt"));
+  stream.open(filePath + "/" + fileName + "_dp_conditional_deps.txt");
 	if (!stream.is_open())
 	{
-		errs() << "Problem opening json file for writing: " << fileName + string("_dp_conditional_deps.txt") << "\n";
+		errs() << "Problem opening json file for writing: " << filePath + "/" + fileName + string("_dp_conditional_deps.txt") << "\n";
 	}
 	else
 	{
@@ -342,7 +249,7 @@ bool DPInstrumentationOmission::doFinalization(Module &M){
     }
   }
   stream.close();
-  errs () << "wrote file: " << fileName + string("_dp_conditional_deps.txt") << "\n";
+  errs () << "Wrote conditional deps to: " << filePath + "/" + fileName + string("_dp_conditional_deps.txt") << "\n";
   return false;
 }
 

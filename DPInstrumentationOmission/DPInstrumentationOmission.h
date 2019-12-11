@@ -18,7 +18,7 @@
 #include "llvm/PassSupport.h"
 #include "llvm/IR/DerivedTypes.h"
 
-#include "InstructionGraph.h"
+#include "InstructionDG.h"
 
 #include "DPUtils.h"
 
@@ -31,9 +31,9 @@ namespace {
     class DPInstrumentationOmission : public FunctionPass {
     private:
         string fileName;
-        AAResults *AAR;
-        InstructionGraph *DG, *CFG;
-        set<Instruction*> omittableInstructions;
+        //TODO: get full path to current working dir to init filePath
+        string filePath = "/media/backuphd/nick/benchmarks/tmp";
+        
         int32_t fid;
         vector<set<string>> conditionalBBDeps;
         Type *Void;
@@ -42,12 +42,8 @@ namespace {
         Function *ReportBB;
         dputil::VariableNameFinder *VNF;
 
-        void depFinder();
-        void depFinderHelper1(vector<Instruction*>* checkedInstructions, Instruction* I);
-        void depFinderHelper2(vector<Instruction*>* checkedInstructions, Instruction* I, Instruction* C);
-
         string edgeToDPDep(Edge<Instruction*, bool> *e);
-
+        
     public:
         static char ID;
         StringRef getPassName() const;

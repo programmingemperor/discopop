@@ -48,8 +48,8 @@ namespace __dp
     // resources are freed, leading to segmentation fault.
 
     // Runtime merging structures
-    depMap allDeps;
-    stringDepMap outPutDeps;
+    depMap *allDeps = nullptr;
+    stringDepMap *outPutDeps = nullptr;
     LoopTable *loopStack = nullptr;     // loop stack tracking
     LoopRecords *loops = nullptr;       // loop merging
     BGNFuncList *beginFuncs = nullptr;  // function entries
@@ -123,7 +123,7 @@ namespace __dp
     }
 
     void generateStringDepMap(){
-        for (auto &dline : allDeps)
+        for (auto &dline : *allDeps)
         {
             if (dline.first)
             {
@@ -156,10 +156,10 @@ namespace __dp
                     lineDeps.insert(dep);
                 }
                 
-                if(outPutDeps.count(lid) == 0){
-                    outPutDeps[lid] = lineDeps;
+                if(outPutDeps->count(lid) == 0){
+                    (*outPutDeps)[lid] = lineDeps;
                 }else{
-                    outPutDeps[lid].insert(lineDeps.begin(), lineDeps.end());
+                    (*outPutDeps)[lid].insert(lineDeps.begin(), lineDeps.end());
                 }
                 
                 delete dline.second;
@@ -169,7 +169,7 @@ namespace __dp
 
     void outputDeps()
     {
-        for(auto pair: outPutDeps){
+        for(auto pair: *outPutDeps){
             *out << pair.first << " NOM ";
             for(auto dep: pair.second){
                 *out << " " << dep;
@@ -281,7 +281,6 @@ namespace __dp
         // initialize global variables
         addrChunkPresentConds = new pthread_cond_t[NUM_WORKERS];
         addrChunkMutexes = new pthread_mutex_t[NUM_WORKERS];
-        bbList = new ReportedBBList();
         chunks = new queue<AccessInfo *>[NUM_WORKERS];
         addrChunkPresent = new bool[NUM_WORKERS];
         tempAddrChunks = new AccessInfo*[NUM_WORKERS];
@@ -343,11 +342,11 @@ namespace __dp
         {
             // if a lid occurs the first time, then add it in to the global hash table.
             // Otherwise just take the associated set of dps.
-            globalPos = allDeps.find(dep.first);
-            if (globalPos == allDeps.end())
+            globalPos = allDeps->find(dep.first);
+            if (globalPos == allDeps->end())
             {
                 tmp_depSet = new depSet();
-                allDeps[dep.first] = tmp_depSet;
+                (*allDeps)[dep.first] = tmp_depSet;
             }
             else
             {
@@ -679,6 +678,9 @@ namespace __dp
 
             delete loopStack;
             delete endFuncs;
+            delete allDeps;
+            delete outPutDeps;
+            delete bbList;
 
             for (auto loop : *loops)
             {
@@ -719,12 +721,12 @@ namespace __dp
                         string k(res2[0]);
                         regex_search(s, res2, r3);
                         string v(res2[0]);
-                        if(outPutDeps.count(k) == 0){
+                        if(outPutDeps->count(k) == 0){
                             set<string> depSet;
-                            outPutDeps[k] = depSet;
+                            (*outPutDeps)[k] = depSet;
                         }
-                        outPutDeps[k].insert(v);
-                        cout << "Added: " << k << " " << v << endl;
+                        (*outPutDeps)[k].insert(v);
+                        if(DP_DEBUG) cout << "Added: " << k << " " << v << endl;
                         line = res1.suffix();
                     }
                 }
@@ -748,6 +750,9 @@ namespace __dp
                 beginFuncs = new BGNFuncList();
                 endFuncs = new ENDFuncList();
                 out = new ofstream();
+                allDeps = new depMap();
+                outPutDeps = new stringDepMap();
+                bbList = new ReportedBBList();
 
 #ifdef __linux__
                 // try to get an output file name w.r.t. the target application
