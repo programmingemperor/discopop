@@ -11,7 +11,6 @@
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/IR/IntrinsicInst.h"
 
 #include "llvm/PassAnalysisSupport.h"
@@ -34,15 +33,12 @@ namespace {
         //TODO: get full path to current working dir to init filePath
         string filePath = "/media/backuphd/nick/benchmarks/tmp";
         
-        int32_t fid;
         vector<set<string>> conditionalBBDeps;
         Type *Void;
         IntegerType *Int32;
         PointerType *CharPtr;
         Function *ReportBB;
         dputil::VariableNameFinder *VNF;
-
-        string edgeToDPDep(Edge<Instruction*, bool> *e);
         
     public:
         static char ID;

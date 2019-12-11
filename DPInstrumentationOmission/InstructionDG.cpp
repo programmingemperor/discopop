@@ -7,16 +7,18 @@ void InstructionDG::recursiveDepChecker(set<Instruction*>& checkedInstructions, 
 	checkedInstructions.insert(C);
 	if(CFG->isEntryOrExit(C)) return;
 
+	Value *V = I->getOperand(isa<StoreInst>(I) ? 1 : 0);
 	if (DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(C))
-	if(DbgDeclare->getAddress() == I->getOperand(isa<StoreInst>(I) ? 1 : 0))
-		return;
+		if(DbgDeclare->getAddress() == V)
+			return;
 	else if (DbgValueInst* DbgValue = dyn_cast<DbgValueInst>(C))
-	if(DbgValue->getValue() == I->getOperand(isa<StoreInst>(I) ? 1 : 0))
+	if(DbgValue->getValue() == V)
 		return;
-	AliasResult AR = AAR->alias(I->getOperand(isa<StoreInst>(I) ? 1 : 0), C->getOperand(isa<StoreInst>(C) ? 1 : 0));
-	if((isa<StoreInst>(I) || isa<StoreInst>(C)) && AR != NoAlias){
-	Graph::addEdge(I, C, AR == MustAlias);
-	if(AR == MustAlias)
+	
+	Value *W = C->getOperand(isa<StoreInst>(C) ? 1 : 0);
+
+	if(V == W && (isa<StoreInst>(I) || isa<StoreInst>(C))){
+		Graph::addEdge(I, C);
 		return;
 	}
 	for(auto edge: CFG->getInEdges(C))
@@ -40,6 +42,20 @@ void InstructionDG::recursiveDepFinder(set<Instruction*>& checkedInstructions, I
 
 void InstructionDG::highlightNode(Instruction *instr){
 	highlightedNodes.insert(instr);
+}
+
+string InstructionDG::edgeToDPDep(Edge<Instruction*> *e){
+    Instruction *I = e->getSrc()->getItem();
+    Instruction *J = e->getDst()->getItem();
+    string depType = (isa<LoadInst>(I) ? string("R") : string("W")) + "A" + (isa<LoadInst>(J) ? string("R") : string("W"));
+
+    return to_string(fid) + ":"
+      + to_string(I->getDebugLoc().getLine()) + " "
+      + depType + " "
+      + to_string(fid) + ":"
+      + to_string(J->getDebugLoc().getLine()) + "|"
+      + VNF->getVarName(I)
+    ;
 }
 
 void InstructionDG::dumpToDot(const string targetPath)
@@ -84,7 +100,7 @@ void InstructionDG::dumpToDot(const string targetPath)
 	{	
 		dotStream << "\t\"" << getNodeIndex(e->getSrc())
 			<< "\" -> \"" << getNodeIndex(e->getDst()) 
-			<< "\" [" << (e->get() ? "style=bold" : "style=dotted") << "];\n"
+			<< "\";\n"
 		;
 	}
 	dotStream << "}";

@@ -10,7 +10,7 @@
 #define ENTRY 1000000
 #define EXIT 2000000
 
-class InstructionCFG : public Graph<Instruction*, bool>
+class InstructionCFG : public Graph<Instruction*>
 {
 	
 private:
@@ -35,7 +35,7 @@ public:
 				DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(&I);
 				if(isa<StoreInst>(I) || isa<LoadInst>(I) || DbgDeclare){
 					if(previousInstruction != nullptr){
-						Graph::addEdge(previousInstruction, &I, false);
+						Graph::addEdge(previousInstruction, &I);
 					}
 					previousInstruction = &I;
 				}
@@ -49,9 +49,9 @@ public:
 		for(auto node : Graph::getNodes()){
 			if(node != entry && node != exit){
                 if(Graph::getInEdges(node).empty()){
-                    Graph::addEdge(entry, node, false);
+                    Graph::addEdge(entry, node);
                 }else if(Graph::getOutEdges(node).empty()){
-                    Graph::addEdge(node, exit, false);
+                    Graph::addEdge(node, exit);
                 }
 			}
 		}

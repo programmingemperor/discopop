@@ -2,7 +2,7 @@
 
 #define DEBUG_TYPE "dp-omissions"
 
-#define DP_DEBUG false
+#define DP_DEBUG true
 
 STATISTIC(totalInstrumentations, "Total DP-Instrumentations");
 STATISTIC(removedInstrumentations, "Disregarded DP-Instructions");
@@ -23,21 +23,6 @@ StringRef DPInstrumentationOmission::getPassName() const{
 
 void DPInstrumentationOmission::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<AAResultsWrapperPass>();
-}
-
-string DPInstrumentationOmission::edgeToDPDep(Edge<Instruction*, bool> *e){
-    Instruction *I = e->getSrc()->getItem();
-    Instruction *J = e->getDst()->getItem();
-    string depType = (isa<LoadInst>(I) ? string("R") : string("W")) + "A" + (isa<LoadInst>(J) ? string("R") : string("W"));
-
-    return to_string(fid) + ":"
-      + to_string(I->getDebugLoc().getLine()) + " "
-      + depType + " "
-      + to_string(fid) + ":"
-      + to_string(J->getDebugLoc().getLine()) + "|"
-      + VNF->getVarName(I)
-    ;
 }
 
 bool DPInstrumentationOmission::runOnFunction(Function &F) {
@@ -45,13 +30,9 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
 
   DebugLoc dl;
   Value *v;
-  AAResults* AAR = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   DominatorTree& DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   
   set<Instruction*> omittableInstructions;
-
-  determineFileID(F, fid);
-
   set<Value*> localValues, writtenValues;
 
   // Get local values (variables)
@@ -69,11 +50,11 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
         if(Fun->getName() == "__dp_write" || Fun->getName() == "__dp_read"){
           ++totalInstrumentations;
         }
-        // Remove from localValues those which may alias values passed to other functions (by ref/ptr)
+        // Remove from localValues those which are passed to other functions (by ref/ptr)
         for(uint i = 0; i < call_inst->getNumOperands() - 1; ++i){
           v = call_inst->getArgOperand(i);
           for(Value *w: localValues){
-            if(!AAR->isNoAlias(v, w)){
+            if(w == v){
               localValues.erase(v);
             }
           }
@@ -84,6 +65,13 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
     if(isa<StoreInst>(&*I)){
       if(I->getDebugLoc()){
         writtenValues.insert(I->getOperand(1));
+      }
+      // Remove values from locals if dereferenced
+      v = I->getOperand(0);
+      for(Value *w: localValues){
+        if(w == v){
+          localValues.erase(v);
+        }
       }
     }
   }
@@ -96,17 +84,17 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
       if(
         localValues.find(v) != localValues.end() && writtenValues.find(v) == writtenValues.end()
         || v->getName() == "retval"
-        || AAR->pointsToConstantMemory(v)
       ) omittableInstructions.insert(&*I);
     }
   }
   
   // Perform the predictable dependence analysis
   if(DPOmissionsDepAnalysis){
-
+    int32_t fid;
+    determineFileID(F, fid);
     map<BasicBlock*, set<string>> conditionalDepMap;
     InstructionCFG CFG(VNF, F);
-    InstructionDG DG(VNF, &CFG, AAR);
+    InstructionDG DG(VNF, &CFG, fid);
     Instruction *I, *J;
 
     for(auto node : DG.getNodes()){
@@ -114,14 +102,14 @@ bool DPInstrumentationOmission::runOnFunction(Function &F) {
         set<string> tmpDeps;
         for(auto edge: DG.getOutEdges(node)){
           if(J = edge->getDst()->getItem()){
-            if(I == J || !DT.dominates(J, I) || !edge->get()) goto next; // if 1 dep is not predictable, don't omit instr
-            tmpDeps.insert(edgeToDPDep(edge));
+            if(I == J || !DT.dominates(J, I)) goto next; // if 1 dep is not predictable, don't omit instr
+            tmpDeps.insert(DG.edgeToDPDep(edge));
           }
         }
         for(auto edge: DG.getInEdges(node)){
           if(J = edge->getSrc()->getItem()){
-            if(I == J || !DT.dominates(I, J) || !edge->get()) goto next; // if 1 dep is not predictable, don't omit instr
-            tmpDeps.insert(edgeToDPDep(edge));
+            if(I == J || !DT.dominates(I, J)) goto next; // if 1 dep is not predictable, don't omit instr
+            tmpDeps.insert(DG.edgeToDPDep(edge));
           }
         }
         v = I->getOperand(isa<StoreInst>(&*I) ? 1 : 0);

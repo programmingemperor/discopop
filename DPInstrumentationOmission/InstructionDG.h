@@ -1,26 +1,27 @@
 #include <string>
 #include "InstructionCFG.h"
 #include "DPUtils.h"
-#include "llvm/Analysis/AliasAnalysis.h"
 
-class InstructionDG : public Graph<Instruction*, bool>
+class InstructionDG : public Graph<Instruction*>
 {
 	
 private:
 	dputil::VariableNameFinder *VNF;
 	InstructionCFG *CFG;
-	AAResults *AAR;
 	set<Instruction*> highlightedNodes;
+	int32_t fid;
 
 	void recursiveDepChecker(set<Instruction*>& checkedInstructions, Instruction* I, Instruction* C);
 	void recursiveDepFinder(set<Instruction*>& checkedInstructions, Instruction* I);
 
 public:
-	InstructionDG(dputil::VariableNameFinder *_VNF, InstructionCFG *_CFG, AAResults* _AAR): VNF(_VNF), CFG(_CFG), AAR(_AAR){
+	InstructionDG(dputil::VariableNameFinder *_VNF, InstructionCFG *_CFG, int32_t _fid): VNF(_VNF), CFG(_CFG), fid(_fid){
         set<Instruction*> checkedInstructions;
 		for(auto edge: CFG->getInEdges(CFG->getExit()))
 			recursiveDepFinder(checkedInstructions, edge->getSrc()->getItem());
 	}
+
+	string edgeToDPDep(Edge<Instruction*> *e);
 
 	void highlightNode(Instruction *instr);
 	void dumpToDot(const string targetPath);

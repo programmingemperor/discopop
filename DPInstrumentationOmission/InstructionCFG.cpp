@@ -8,10 +8,10 @@ void InstructionCFG::findAndAddFirstRelevantInstructionInSuccessorBlocks(BasicBl
 			DebugLoc dl = I.getDebugLoc();
 			if(!dl) continue;
 			if(isa<StoreInst>(I) || isa<LoadInst>(I)){
-			Graph::addEdge(previousInstruction, &I, false);
+			Graph::addEdge(previousInstruction, &I);
 			goto next;
 			}else if(isa<DbgDeclareInst>(&I)){
-			Graph::addEdge(previousInstruction, &I, false);
+			Graph::addEdge(previousInstruction, &I);
 			goto next;
 			}
 		}
@@ -19,7 +19,7 @@ void InstructionCFG::findAndAddFirstRelevantInstructionInSuccessorBlocks(BasicBl
 		next:;
 	}
 	if(BB->getName().find("for.end") != string::npos && !hasSuccessors)
-		Graph::addEdge(Graph::getNode(previousInstruction), exit, false);
+		Graph::addEdge(Graph::getNode(previousInstruction), exit);
 }
 
 void InstructionCFG::highlightNode(Instruction *instr){
