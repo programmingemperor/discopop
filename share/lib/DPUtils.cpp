@@ -197,11 +197,11 @@ string VariableNameFinder::getVarName(Value const *V){
         }
 
         if(auto GEPI = dyn_cast<GetElementPtrInst>(I)){
-            string r = getVarName(GEPI->getOperand(0));
             Type *srcElemT = GEPI->getSourceElementType();
+            string r = getVarName(GEPI->getOperand(0));
 
-            if(isa<ArrayType>(srcElemT)){
-                for(uint i = 2; i < GEPI->getNumOperands(); ++i){
+            if(isa<SequentialType>(srcElemT) || isa<IntegerType>(srcElemT)){
+                for(uint i = (isa<IntegerType>(srcElemT) ? 1 : 2); i < GEPI->getNumOperands(); ++i){
                     if(isa<Instruction>(GEPI->getOperand(i))){
                     r += "[" + getVarName((Instruction*)GEPI->getOperand(i)) + "]";
                     }else if(isa<ConstantInt>(GEPI->getOperand(i))){
@@ -233,6 +233,10 @@ string VariableNameFinder::getVarName(Value const *V){
             }
 
             return r;
+        }
+
+        if(isa<SExtInst>(I)){
+            return getVarName(I->getOperand(0));
         }
 
         if(isa<StoreInst>(I) || isa<LoadInst>(I)){

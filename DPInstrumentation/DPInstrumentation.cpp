@@ -91,8 +91,9 @@ namespace
         // Callback Inserters
         //void insertDpInit(const vector<Value*> &args, Instruction *before);
         //void insertDpFinalize(Instruction *before);
-        void instrumentStore(Instruction *toInstrument);
+        void instrumentStore(StoreInst *toInstrument);
         void instrumentLoad(LoadInst *toInstrument);
+        void instrumentDeclare(DbgDeclareInst *toInstrument);
         void insertDpFinalize(Instruction *before);
         void instrumentFuncEntry(Function &F);
         void instrumentLoopEntry(BasicBlock *bb, int32_t id);
@@ -102,7 +103,7 @@ namespace
 
         // Callbacks to run-time library
         Function *DpInit, *DpFinalize;
-        Function *DpRead, *DpWrite;
+        Function *DpRead, *DpWrite, *DpDecl;
         Function *DpCallOrInvoke;
         Function *DpFuncEntry, *DpFuncExit;
         Function *DpLoopEntry, *DpLoopExit;
@@ -179,6 +180,14 @@ void DiscoPoP::setupCallbacks()
     DpFinalize = cast<Function>(ThisModule->getOrInsertFunction("__dp_finalize",
                                 Void,
                                 Int32));
+    DpDecl = cast<Function>(ThisModule->getOrInsertFunction("__dp_decl",
+                             Void,
+#ifdef SKIP_DUP_INSTR
+                             Int32, Int64, CharPtr, Int64, Int64
+#else
+                             Int32, Int64, CharPtr
+#endif
+                             ));
 
     DpRead = cast<Function>(ThisModule->getOrInsertFunction("__dp_read",
                             Void,
@@ -555,10 +564,9 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
     if(DP_DEBUG) errs() << "runOnBasicBlock: " << BB.getName() << "\n";
     for (BasicBlock::iterator BI = BB.begin(), E = BB.end(); BI != E; ++BI)
     {
-        if (DbgDeclareInst *DI = dyn_cast<DbgDeclareInst>(BI))
+        if (isa<DbgDeclareInst>(BI))
         {
-            assert(DI->getOperand(0));
-            instrumentStore(DI);
+            instrumentDeclare(cast<DbgDeclareInst>(BI));
         }
         // load instruction
         else if (isa<LoadInst>(BI))
@@ -568,7 +576,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
         // // store instruction
         else if (isa<StoreInst>(BI))
         {
-            instrumentStore(&*BI);
+            instrumentStore(cast<StoreInst>(BI));
         }
         // call and invoke
         else if (isaCallOrInvoke(&*BI))
@@ -735,26 +743,17 @@ void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 }
 
 
-void DiscoPoP::instrumentStore(Instruction *toInstrument)
+void DiscoPoP::instrumentStore(StoreInst *toInstrument)
 {
     if(DP_DEBUG) errs () << "instrumentStore: " << *toInstrument << "\n";
-    int32_t lid;
-    Value *operand;
-    if(isa<DbgDeclareInst>(toInstrument)){
-        lid = 0;
-        operand = dyn_cast<DbgDeclareInst>(toInstrument)->getAddress();
-    }else{
-        lid = getLID(toInstrument, fileID);
-        if(lid == 0) return;
-        operand = dyn_cast<StoreInst>(toInstrument)->getPointerOperand();
-    }
+    int32_t lid = getLID(toInstrument, fileID);
+    if(lid == 0) return;
+
+    Value *operand = toInstrument->getPointerOperand();
 
     vector<Value *> args;
     args.push_back(ConstantInt::get(Int32, lid));
-
-    Value *memAddr = PtrToIntInst::CreatePointerCast(operand, Int64, "", toInstrument);
-    args.push_back(memAddr);
-
+    args.push_back(PtrToIntInst::CreatePointerCast(operand, Int64, "", toInstrument));
     args.push_back(determineVarName(toInstrument));
 
 #ifdef SKIP_DUP_INSTR
@@ -788,8 +787,71 @@ void DiscoPoP::instrumentStore(Instruction *toInstrument)
     args.push_back(currentAddrTracker);
     args.push_back(currentCount);
 #endif
-
     CallInst::Create(DpWrite, args, "", toInstrument);
+
+#ifdef SKIP_DUP_INSTR
+    //Post instrumentation call
+    //Create updates
+    StoreInst *addrUpdate = new StoreInst::StoreInst(memAddr, addrTracker);
+    BinaryOperator::BinaryOperator *incCount =
+        BinaryOperator::Create(Instruction::Add,
+                               currentCount,
+                               ConstantInt::get(Int64, 1)
+                              );
+    StoreInst *countUpdate = new StoreInst::StoreInst(incCount, countTracker);
+
+    //add updates after before
+    addrUpdate->insertAfter(toInstrument);
+    incCount->insertAfter(toInstrument);
+    countUpdate->insertAfter(incCount);
+#endif
+}
+
+void DiscoPoP::instrumentDeclare(DbgDeclareInst *toInstrument)
+{
+    if(DP_DEBUG) errs () << "instrumentDeclare: " << *toInstrument << "\n";
+    int32_t lid = getLID(toInstrument, fileID);
+    if(lid == 0) return;
+
+    Value *operand = toInstrument->getAddress();
+
+    vector<Value *> args;
+    args.push_back(ConstantInt::get(Int32, lid));
+    args.push_back(PtrToIntInst::CreatePointerCast(operand, Int64, "", toInstrument));
+    args.push_back(determineVarName(toInstrument));
+
+#ifdef SKIP_DUP_INSTR
+    //Value* storeAddr = args[1];
+    //Type* trackerType = v2->getType();
+
+    //cout << "Creating Store " << uniqueNum;
+    Twine name = Twine("S").concat(Twine(uniqueNum));
+
+    GlobalVariable *addrTracker =
+        new GlobalVariable(*this->ThisModule,
+                           Int64,//trackerType
+                           false,
+                           GlobalVariable::PrivateLinkage,
+                           Constant::getNullValue(Int64),//trackerType
+                           name);
+    GlobalVariable *countTracker =
+        new GlobalVariable(*this->ThisModule,
+                           Int64,
+                           false,
+                           GlobalVariable::PrivateLinkage,
+                           Constant::getNullValue(Int64),
+                           name.concat(Twine("count")));
+    uniqueNum++;
+
+    //Load current values before instr
+    LoadInst *currentAddrTracker = new LoadInst::LoadInst(addrTracker, Twine(), toInstrument);
+    LoadInst *currentCount = new LoadInst::LoadInst(countTracker, Twine(), toInstrument);
+
+    //add instr before before
+    args.push_back(currentAddrTracker);
+    args.push_back(currentCount);
+#endif
+    CallInst::Create(DpDecl, args, "", toInstrument);
 
 #ifdef SKIP_DUP_INSTR
     //Post instrumentation call

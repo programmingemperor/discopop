@@ -3,17 +3,17 @@
 #include "DPUtils.h"
 
 
-void InstructionDG::recursiveDepChecker(set<Instruction*>& checkedInstructions, Instruction* I, Instruction* C){
-	checkedInstructions.insert(C);
-	if(CFG->isEntryOrExit(C)) return;
+void InstructionDG::recursiveDepChecker(set<Instruction*>* checkedInstructions, Instruction* I, Instruction* C){
+	if(CFG->isEntryOrExit(C) || checkedInstructions->find(C) != checkedInstructions->end()) return;
+	checkedInstructions->insert(C);
 
 	Value *V = I->getOperand(isa<StoreInst>(I) ? 1 : 0);
 	if (DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(C))
 		if(DbgDeclare->getAddress() == V)
 			return;
 	else if (DbgValueInst* DbgValue = dyn_cast<DbgValueInst>(C))
-	if(DbgValue->getValue() == V)
-		return;
+		if(DbgValue->getValue() == V)
+			return;
 	
 	Value *W = C->getOperand(isa<StoreInst>(C) ? 1 : 0);
 
@@ -22,20 +22,17 @@ void InstructionDG::recursiveDepChecker(set<Instruction*>& checkedInstructions, 
 		return;
 	}
 	for(auto edge: CFG->getInEdges(C))
-	if(find(checkedInstructions.begin(), checkedInstructions.end(), edge->getSrc()->getItem()) == checkedInstructions.end())
 		recursiveDepChecker(checkedInstructions, I, edge->getSrc()->getItem());
 }
 
-void InstructionDG::recursiveDepFinder(set<Instruction*>& checkedInstructions, Instruction* I){
-	if(CFG->isEntryOrExit(I)) return;
-	checkedInstructions.insert(I);
+void InstructionDG::recursiveDepFinder(set<Instruction*>* checkedInstructions, Instruction* I){
+	if(CFG->isEntryOrExit(I) || checkedInstructions->find(I) != checkedInstructions->end()) return;
+	checkedInstructions->insert(I);
+	if(isa<StoreInst>(I) || isa<LoadInst>(I)) Graph::addNode(I);
 	for(auto edge: CFG->getInEdges(I)){
-	if(isa<StoreInst>(I) || isa<LoadInst>(I)){
-		Graph::addNode(I);
-		set<Instruction*> checkedInstructions2;
-		recursiveDepChecker(checkedInstructions2, I, edge->getSrc()->getItem());
-	}
-	if(find(checkedInstructions.begin(), checkedInstructions.end(), edge->getSrc()->getItem()) == checkedInstructions.end())
+		if(isa<StoreInst>(I) || isa<LoadInst>(I)){
+			recursiveDepChecker(new set<Instruction*>(), I, edge->getSrc()->getItem());
+		}
 		recursiveDepFinder(checkedInstructions, edge->getSrc()->getItem());
 	}
 }

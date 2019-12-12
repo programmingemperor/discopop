@@ -43,11 +43,12 @@ namespace __dp
 
     struct AccessInfo
     {
-        AccessInfo(bool isRead, LID lid, char *var, ADDR addr)
-            : isRead(isRead), lid(lid), var(var), addr(addr) {}
+        AccessInfo(bool isRead, LID lid, char *var, ADDR addr, bool skip = false)
+            : isRead(isRead), lid(lid), var(var), addr(addr), skip(skip) {}
         AccessInfo() : lid(0) {}
 
         bool isRead;
+        bool skip;
         LID lid;
         char *var;
         ADDR addr;
@@ -126,6 +127,7 @@ namespace __dp
     typedef std::set<LID> ENDFuncList;
 
     typedef std::set<int32_t> ReportedBBList;
+    typedef std::map<int32_t, std::set<int32_t>> ReportedBBPairMap;
 
     /******* Helper functions *******/
 
@@ -144,9 +146,11 @@ namespace __dp
 #ifdef SKIP_DUP_INSTR
         void __dp_read(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
         void __dp_write(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
+        void __dp_decl(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
 #else
         void __dp_read(LID lid, ADDR addr, char *var);
         void __dp_write(LID lid, ADDR addr, char *var);
+        void __dp_decl(LID lid, ADDR addr, char *var);
 #endif
         void __dp_report_bb(int32_t bbIndex);
         void __dp_add_omission_deps(char* jsonDeps);

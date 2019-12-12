@@ -57,7 +57,6 @@ namespace __dp
     ReportedBBList *bbList = nullptr;
     ofstream *out;
     ofstream *outInsts;
-    
 
     LID lastCallOrInvoke = 0;
     LID lastProcessedLine = 0;
@@ -402,13 +401,13 @@ namespace __dp
                 for (unsigned short i = 0; i < CHUNK_SIZE; ++i)
                 {
                     access = accesses[i];
-                    if(access.lid == 0) {
-                        SMem->insertToWrite(access.addr, access.lid);
-                        continue;
-                    }
 
                     if (access.isRead)
                     {
+                        if(access.skip) {
+                            SMem->insertToRead(access.addr, access.lid);
+                            continue;
+                        }
                         sigElement lastWrite = SMem->testInWrite(access.addr);
                         if (lastWrite != 0)
                         {
@@ -419,6 +418,11 @@ namespace __dp
                     }
                     else
                     {
+                        if(access.skip) {
+                            SMem->insertToWrite(access.addr, access.lid);
+                            continue;
+                        }
+
                         sigElement lastWrite = SMem->insertToWrite(access.addr, access.lid);
                         if (lastWrite == 0)
                         {
@@ -639,6 +643,59 @@ namespace __dp
                 tempAddrCount[workerID] = 0;
             }
         }
+
+        #ifdef SKIP_DUP_INSTR
+        void __dp_decl(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count)
+        {
+#else
+        void __dp_decl(LID lid, ADDR addr, char *var)
+        {
+#endif
+            if (targetTerminated)
+            {
+                if (DP_DEBUG)
+                {
+                    cout << "__dp_write() is not executed since target program has returned from main()." << endl;
+                }
+                return;
+            }
+            // For tracking function call or invoke
+#ifdef SKIP_DUP_INSTR
+            if (lastaddr == addr && count >= 2)
+            {
+                //cout << "Returning early from store instr\n";
+                return;
+            }
+#endif
+            // For tracking function call or invoke
+            lastCallOrInvoke = 0;
+            lastProcessedLine = lid;
+
+            if(DP_DEBUG)
+            {
+                cout << "instStore at encoded LID " << std::dec << lid << " and addr " << std::hex << addr << endl;
+            }
+
+            //addAccessInfo(false, lid, var, addr);
+            int64_t workerID = addr % NUM_WORKERS;
+            AccessInfo &current = tempAddrChunks[workerID][tempAddrCount[workerID]++];
+            current.isRead = false;
+            current.lid = lid;
+            current.var = var;
+            current.addr = addr;
+            current.skip = true;
+
+            if (tempAddrCount[workerID] == CHUNK_SIZE)
+            {
+                pthread_mutex_lock(&addrChunkMutexes[workerID]);
+                addrChunkPresent[workerID] = true;
+                chunks[workerID].push(tempAddrChunks[workerID]);
+                pthread_cond_signal(&addrChunkPresentConds[workerID]);
+                pthread_mutex_unlock(&addrChunkMutexes[workerID]);
+                tempAddrChunks[workerID] = new AccessInfo[CHUNK_SIZE];
+                tempAddrCount[workerID] = 0;
+            }
+        }
         
         void __dp_report_bb(int32_t bbIndex)
         {
@@ -707,31 +764,30 @@ namespace __dp
             }
         }
 
-        void __dp_add_omission_deps(char* pathToDepFile){
-            ifstream stream(pathToDepFile);
-            if(stream.is_open()){
-                string line;
-                regex r1("[^,]+"), r2("[0-9]+:[0-9]+"), r3("[R|W]A[R|W].*");
-                smatch res1, res2;
+        void __dp_add_omission_deps(char* depStringPtr){
+            string depString(depStringPtr);
+            string line;
+            regex r1("[^\\/]+") ,r2("[^,]+"), r3("[0-9]+:[0-9]+"), r4("[R|W]A[R|W].*");
+            smatch res1, res2, res3;
 
-                while ( getline (stream,line) ){
-                    while (regex_search(line, res1, r1)) {
-                        string s(res1[0]);
-                        regex_search(s, res2, r2);
-                        string k(res2[0]);
-                        regex_search(s, res2, r3);
-                        string v(res2[0]);
-                        if(outPutDeps->count(k) == 0){
-                            set<string> depSet;
-                            (*outPutDeps)[k] = depSet;
-                        }
-                        (*outPutDeps)[k].insert(v);
-                        if(DP_DEBUG) cout << "Added: " << k << " " << v << endl;
-                        line = res1.suffix();
+            while (regex_search(depString, res1, r1)) {
+                string line(res1[0]);
+                while (regex_search(line, res2, r2)) {
+                    string s(res2[0]);
+                    regex_search(s, res3, r3);
+                    string k(res3[0]);
+                    regex_search(s, res3, r4);
+                    string v(res3[0]);
+                    if(outPutDeps->count(k) == 0){
+                        set<string> depSet;
+                        (*outPutDeps)[k] = depSet;
                     }
+                    (*outPutDeps)[k].insert(v);
+                    if(DP_DEBUG) cout << "Added: " << k << " " << v << endl;
+                    line = res2.suffix();
                 }
+                depString = res1.suffix();
             }
-            
         }
 
         void __dp_call(LID lid)
@@ -753,7 +809,6 @@ namespace __dp
                 allDeps = new depMap();
                 outPutDeps = new stringDepMap();
                 bbList = new ReportedBBList();
-
 #ifdef __linux__
                 // try to get an output file name w.r.t. the target application
                 // if it is not available, fall back to "Output.txt"

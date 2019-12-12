@@ -27,7 +27,7 @@ using namespace std;
 using namespace dputil;
 
 namespace {
-    class DPInstrumentationOmission : public FunctionPass {
+    class DPInstrumentationOmission : public ModulePass {
     private:
         string fileName;
         //TODO: get full path to current working dir to init filePath
@@ -43,11 +43,10 @@ namespace {
     public:
         static char ID;
         StringRef getPassName() const;
-        bool runOnFunction(Function &M);
+        bool runOnModule(Module &M);
         void getAnalysisUsage(AnalysisUsage &AU) const;
         bool doInitialization(Module &M);
-        bool doFinalization(Module &M);
 
-        DPInstrumentationOmission() : FunctionPass(ID) {}
+        DPInstrumentationOmission() : ModulePass(ID) {}
     };
 }
