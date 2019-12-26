@@ -54,7 +54,7 @@ namespace __dp
     LoopRecords *loops = nullptr;       // loop merging
     BGNFuncList *beginFuncs = nullptr;  // function entries
     ENDFuncList *endFuncs = nullptr;    // function returns
-    ReportedBBList *bbList = nullptr;
+    ReportedBBSet *bbList = nullptr;
     ofstream *out;
     ofstream *outInsts;
 
@@ -84,7 +84,8 @@ namespace __dp
 
     void addDep(depType type, LID curr, LID depOn, char *var)
     {
-        if(curr == 0 || depOn == 0) return;
+        // if(depOn == 0) return;
+        if(depOn == 0 && type == WAW) type = INIT;
         depMap::iterator posInDeps = myMap->find(curr);
         if (posInDeps == myMap->end())
         {
@@ -680,7 +681,60 @@ namespace __dp
             int64_t workerID = addr % NUM_WORKERS;
             AccessInfo &current = tempAddrChunks[workerID][tempAddrCount[workerID]++];
             current.isRead = false;
-            current.lid = lid;
+            current.lid = 0;
+            current.var = var;
+            current.addr = addr;
+            current.skip = true;
+
+            if (tempAddrCount[workerID] == CHUNK_SIZE)
+            {
+                pthread_mutex_lock(&addrChunkMutexes[workerID]);
+                addrChunkPresent[workerID] = true;
+                chunks[workerID].push(tempAddrChunks[workerID]);
+                pthread_cond_signal(&addrChunkPresentConds[workerID]);
+                pthread_mutex_unlock(&addrChunkMutexes[workerID]);
+                tempAddrChunks[workerID] = new AccessInfo[CHUNK_SIZE];
+                tempAddrCount[workerID] = 0;
+            }
+        }
+
+        #ifdef SKIP_DUP_INSTR
+        void __dp_alloca(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count)
+        {
+#else
+        void __dp_alloca(LID lid, ADDR addr, char *var)
+        {
+#endif
+            if (targetTerminated)
+            {
+                if (DP_DEBUG)
+                {
+                    cout << "__dp_write() is not executed since target program has returned from main()." << endl;
+                }
+                return;
+            }
+            // For tracking function call or invoke
+#ifdef SKIP_DUP_INSTR
+            if (lastaddr == addr && count >= 2)
+            {
+                //cout << "Returning early from store instr\n";
+                return;
+            }
+#endif
+            // For tracking function call or invoke
+            lastCallOrInvoke = 0;
+            lastProcessedLine = lid;
+
+            if(DP_DEBUG)
+            {
+                cout << "instStore at encoded LID " << std::dec << lid << " and addr " << std::hex << addr << endl;
+            }
+
+            //addAccessInfo(false, lid, var, addr);
+            int64_t workerID = addr % NUM_WORKERS;
+            AccessInfo &current = tempAddrChunks[workerID][tempAddrCount[workerID]++];
+            current.isRead = false;
+            current.lid = 0;
             current.var = var;
             current.addr = addr;
             current.skip = true;
@@ -700,6 +754,12 @@ namespace __dp
         void __dp_report_bb(int32_t bbIndex)
         {
             bbList->insert(bbIndex);
+        }
+
+        void __dp_report_bb_pair(int32_t semaphore, int32_t bbIndex)
+        {
+            if(semaphore)
+                bbList->insert(bbIndex);
         }
 
         void __dp_finalize(LID lid)
@@ -764,14 +824,25 @@ namespace __dp
             }
         }
 
-        void __dp_add_omission_deps(char* depStringPtr){
+        void __dp_add_bb_deps(char* depStringPtr){
             string depString(depStringPtr);
-            string line;
-            regex r1("[^\\/]+") ,r2("[^,]+"), r3("[0-9]+:[0-9]+"), r4("[R|W]A[R|W].*");
-            smatch res1, res2, res3;
+            regex r0("[^\\/]+"), r1("[^=]+") ,r2("[^,]+"), r3("[0-9]+:[0-9]+"), r4("(INIT|(R|W)A(R|W)).*");
+            smatch res0, res1, res2, res3;
 
-            while (regex_search(depString, res1, r1)) {
-                string line(res1[0]);
+            while (regex_search(depString, res0, r0)) {
+                string s(res0[0]);
+                
+                regex_search(s, res1, r1);
+                string cond(res1[0]);
+                
+                if(bbList->find(stoi(cond)) == bbList->end()){
+                    depString = res0.suffix();
+                    // cout << "bb_deps: couldn't find " << cond << endl;
+                    continue;
+                }
+                
+                string line(res1.suffix());
+                line.erase(0,1);
                 while (regex_search(line, res2, r2)) {
                     string s(res2[0]);
                     regex_search(s, res3, r3);
@@ -783,10 +854,10 @@ namespace __dp
                         (*outPutDeps)[k] = depSet;
                     }
                     (*outPutDeps)[k].insert(v);
-                    if(DP_DEBUG) cout << "Added: " << k << " " << v << endl;
+                    // cout << "bb_deps: Adding " << k << ":" << v << endl;
                     line = res2.suffix();
                 }
-                depString = res1.suffix();
+                depString = res0.suffix();
             }
         }
 
@@ -808,7 +879,7 @@ namespace __dp
                 out = new ofstream();
                 allDeps = new depMap();
                 outPutDeps = new stringDepMap();
-                bbList = new ReportedBBList();
+                bbList = new ReportedBBSet();
 #ifdef __linux__
                 // try to get an output file name w.r.t. the target application
                 // if it is not available, fall back to "Output.txt"

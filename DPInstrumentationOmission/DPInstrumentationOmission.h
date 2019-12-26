@@ -30,14 +30,11 @@ namespace {
     class DPInstrumentationOmission : public ModulePass {
     private:
         string fileName;
-        //TODO: get full path to current working dir to init filePath
-        string filePath = "/media/backuphd/nick/benchmarks/tmp";
-        
-        vector<set<string>> conditionalBBDeps;
+        int32_t fid;
         Type *Void;
         IntegerType *Int32;
         PointerType *CharPtr;
-        Function *ReportBB;
+        Function *ReportBB, *ReportBBPair;
         dputil::VariableNameFinder *VNF;
         
     public:

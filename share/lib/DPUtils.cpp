@@ -47,21 +47,15 @@ int32_t getFileID(string fileMapping, string fullPathName) {
 int32_t getLID(Instruction* BI, int32_t& fileID)
 {
     int32_t lid = 0;
-    int32_t lno;
+    int32_t lno = 0;
 
     const DebugLoc &location = BI->getDebugLoc();
     if (location)
     {
         lno = BI->getDebugLoc().getLine();
-    }
-    else
-    {
-        lno = 0;
-    }
-
-
-    if (lno == 0)
-    {
+    }else if(isa<AllocaInst>(BI) || isa<StoreInst>(BI)){
+        lno = BI->getFunction()->getSubprogram()->getLine();
+    }else{
         return 0;
     }
 
@@ -85,7 +79,6 @@ int32_t getLID(Instruction* BI, int32_t& fileID)
         File = Loc->getFilename();
         Dir = Loc->getDirectory();
 
-
         if (File.str().substr(0, 2) == "./")
         {
             std::string sub = File.str().substr(0, 2);
@@ -97,8 +90,6 @@ int32_t getLID(Instruction* BI, int32_t& fileID)
         // file is not in FileMapping.txt
         if (fileID == 0)
             return -1;
-
-
     }
     lid = (fileID << LIDSIZE) + lno;
     //ofmap << lid << std::endl;
@@ -109,63 +100,24 @@ int32_t getLID(Instruction* BI, int32_t& fileID)
 void determineFileID(Function &F, int32_t& fileID)
 {
     fileID = 0;
-
-    // if FileMapping.txt is not given, we use 1 as file index
-    if (!dputil::fexists(FileMappingPath))
-    {
+    if (!dputil::fexists(FileMappingPath)){
         fileID = 1;
+        return;
     }
-    else
+    
+    DIFile* DIF = F.getSubprogram()->getFile();
+    
+    StringRef File = "", Dir = "";
+    File = DIF->getFilename();
+    Dir = DIF->getDirectory();
+
+    char *absolutePathFileName = realpath((Dir.str() + "/" + File.str()).c_str(), NULL);
+    
+    if (absolutePathFileName)
     {
-        for (Function::iterator FI = F.begin(), FE = F.end(); FI != FE; ++FI)
-        {
-            BasicBlock &BB = *FI;
-            for (BasicBlock::iterator BI = BB.begin(), EI = BB.end(); BI != EI; ++BI)
-            {
-                int32_t lno;
-                const DebugLoc &location = BI->getDebugLoc();
-                if (location)
-                {
-                    lno = BI->getDebugLoc().getLine();
-                }
-                else
-                {
-                    lno = 0;
-                }
-
-                if (lno)
-                {
-                    MDNode *N = BI->getMetadata("dbg");
-                    // N == NULL means BI is only a helper instruction.
-                    // No metadata is attached to BI.
-                    if (N)
-                    {
-                        StringRef File = "", Dir = "";
-                        // NOTE: Replace  next 3 lines with next 3 lines
-                        // DILocation Loc(N);
-                        // File = Loc.getFilename();
-                        // Dir = Loc.getDirectory();
-                        const DILocation *Loc = location.get();
-                        File = Loc->getFilename();
-                        Dir = Loc->getDirectory();
-
-                        char *absolutePathFileName = realpath((Dir.str() + "/" + File.str()).c_str(), NULL);
-
-                        if (absolutePathFileName == NULL)
-                        {
-                            absolutePathFileName = realpath(File.data(), NULL);
-                        }
-
-                        if (absolutePathFileName)
-                        {
-                            fileID = dputil::getFileID(FileMappingPath, string(absolutePathFileName));
-                            delete[] absolutePathFileName;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+        fileID = dputil::getFileID(FileMappingPath, string(absolutePathFileName));
+        delete[] absolutePathFileName;
+        return;
     }
 }
 
@@ -181,17 +133,33 @@ string get_exe_dir() {
     }
 }
 
+VariableNameFinder::VariableNameFinder(Module &M){
+    DebugInfoFinder DIF;
+    DIF.processModule(M);
+    for (auto DI: DIF.types()) {
+        if(auto CT = dyn_cast<DICompositeType>(DI)){
+            vector<string> v;
+            for(auto E: CT->getElements()){
+                if(auto DT = dyn_cast<DIDerivedType>(E)){
+                    v.push_back(DT->getName());
+                }
+            }
+            StructMemberMap.insert({CT->getName(), v});
+        }
+    }
+}
 
 string VariableNameFinder::getVarName(Value const *V){
     if(const Instruction *I = dyn_cast<Instruction>(V)){
+        // errs() << "Instruction: " << *I << " | " << I->getOpcodeName() << "\n";
         if(isa<AllocaInst>(I)){
             if(V->hasName()){
-            string r = V->getName().str();
-            std::size_t found = r.find(".addr");
-            if(found != string::npos){
-                return r.erase(found);
-            }
-            return r;
+                string r = V->getName().str();
+                std::size_t found = r.find(".addr");
+                if(found != string::npos){
+                    return r.erase(found);
+                }
+                return r;
             }
             return "!";
         }
@@ -200,21 +168,18 @@ string VariableNameFinder::getVarName(Value const *V){
             Type *srcElemT = GEPI->getSourceElementType();
             string r = getVarName(GEPI->getOperand(0));
 
+            if(GEPI->getNumOperands() == 2){
+                return r + "[" + getVarName(GEPI->getOperand(1)) + "]";
+            }
+
+            if(dyn_cast<ConstantInt>(GEPI->getOperand(1))->getSExtValue() > 0){
+                r += "[" + getVarName(GEPI->getOperand(1)) + "]";
+            }
+
             if(isa<SequentialType>(srcElemT) || isa<IntegerType>(srcElemT)){
-                for(uint i = (isa<IntegerType>(srcElemT) ? 1 : 2); i < GEPI->getNumOperands(); ++i){
-                    if(isa<Instruction>(GEPI->getOperand(i))){
-                    r += "[" + getVarName((Instruction*)GEPI->getOperand(i)) + "]";
-                    }else if(isa<ConstantInt>(GEPI->getOperand(i))){
-                    r += "[" + to_string(((ConstantInt*) GEPI->getOperand(i))->getSExtValue()) + "]";
-                    }
-                }
+                return r + "[" + getVarName(GEPI->getOperand(2)) + "]";
             }else if(StructType *st = dyn_cast<StructType>(srcElemT)){
-                int64_t index = 0;
-                for(uint i = 2; i < GEPI->getNumOperands(); ++i){
-                    if(auto iter = dyn_cast<ConstantInt>(GEPI->getOperand(i))){
-                    index = iter->getSExtValue();
-                    }
-                }
+                int64_t offset = dyn_cast<ConstantInt>(GEPI->getOperand(2))->getSExtValue();
                 if(st->hasName()){
                     string structTypeName = st->getName().str();
                     if(structTypeName.find("struct.") != string::npos){
@@ -224,14 +189,10 @@ string VariableNameFinder::getVarName(Value const *V){
                         structTypeName = structTypeName.erase(0,6);
                     }
                     if(StructMemberMap.count(structTypeName) > 0){
-                        r += "." + StructMemberMap[structTypeName][index];
-                        return r;
+                        return r + "." + StructMemberMap[structTypeName][offset];
                     }
                 }
-                r += ".[" + to_string(index) + "]";
-                return r;
             }
-
             return r;
         }
 
@@ -239,33 +200,39 @@ string VariableNameFinder::getVarName(Value const *V){
             return getVarName(I->getOperand(0));
         }
 
-        if(isa<StoreInst>(I) || isa<LoadInst>(I)){
-            string r;
-            Value *v = I->getOperand(isa<StoreInst>(I) ? 1 : 0);
-            if(v->hasName()){
-                return getVarName(v);
-            }else{
-                return "*" + getVarName(v);
+        if(const BinaryOperator* binop = dyn_cast<BinaryOperator>(I)){
+            string op;
+            switch(binop->getOpcode()){
+                case 12: op = "+"; break;
+                case 14: op = "-"; break;
+                case 16: op = "*"; break;
+                case 19: op = "/"; break;
             }
+            return getVarName(I->getOperand(0)) + op + getVarName(I->getOperand(1));
         }
-    }else if (const GEPOperator* gepo = dyn_cast<GEPOperator>(V)){
-        if (const GlobalVariable* gv = dyn_cast<GlobalVariable>(gepo->getPointerOperand()))
-        {
+
+        if(isa<StoreInst>(I) || isa<LoadInst>(I)){
+            Value* v = I->getOperand((isa<StoreInst>(I) ? 1 : 0));
+            if(isa<LoadInst>(v)) return "*" + getVarName(v);
+            return getVarName(v);
+        }
+    }
+    
+    if (const GEPOperator* gepo = dyn_cast<GEPOperator>(V)){
+        if (const GlobalVariable* gv = dyn_cast<GlobalVariable>(gepo->getPointerOperand())){
             string r = gv->getGlobalIdentifier();
             Type *st = gepo->getSourceElementType();
             if(StructType *ct = dyn_cast<StructType>(st)){
-            string structTypeName = ct->getName().str().erase(0,7);
-            int64_t index = 0;
-            for (auto it = gepo->idx_begin(), et = gepo->idx_end(); it != et; ++it){
-                if(auto iter = dyn_cast<ConstantInt>(*it)){
-                index = iter->getSExtValue();
-                }
+                string structTypeName = ct->getName().str().erase(0,7);
+                int64_t offset = dyn_cast<ConstantInt>(gepo->getOperand(2))->getSExtValue();
+                r += "." + StructMemberMap[structTypeName][offset];
+                return r;
             }
-            r += "." + StructMemberMap[structTypeName][index];
-            return r;
-            }
-            
         }
+    }
+    
+    if(const ConstantInt* CI = dyn_cast<ConstantInt>(V)){
+        return to_string(CI->getSExtValue());
     }
     
     if(V->hasName()){

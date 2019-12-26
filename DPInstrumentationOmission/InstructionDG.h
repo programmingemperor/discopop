@@ -15,10 +15,7 @@ private:
 	void recursiveDepFinder(set<Instruction*>* checkedInstructions, Instruction* I);
 
 public:
-	InstructionDG(dputil::VariableNameFinder *_VNF, InstructionCFG *_CFG, int32_t _fid): VNF(_VNF), CFG(_CFG), fid(_fid){
-		for(auto edge: CFG->getInEdges(CFG->getExit()))
-			recursiveDepFinder(new set<Instruction*>(), edge->getSrc()->getItem());
-	}
+	InstructionDG(dputil::VariableNameFinder *_VNF, InstructionCFG *_CFG, int32_t _fid);
 
 	string edgeToDPDep(Edge<Instruction*> *e);
 

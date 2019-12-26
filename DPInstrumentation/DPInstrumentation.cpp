@@ -94,6 +94,7 @@ namespace
         void instrumentStore(StoreInst *toInstrument);
         void instrumentLoad(LoadInst *toInstrument);
         void instrumentDeclare(DbgDeclareInst *toInstrument);
+        void instrumentAllocate(AllocaInst *toInstrument);
         void insertDpFinalize(Instruction *before);
         void instrumentFuncEntry(Function &F);
         void instrumentLoopEntry(BasicBlock *bb, int32_t id);
@@ -103,7 +104,7 @@ namespace
 
         // Callbacks to run-time library
         Function *DpInit, *DpFinalize;
-        Function *DpRead, *DpWrite, *DpDecl;
+        Function *DpRead, *DpWrite, *DpDecl, *DpAlloca;
         Function *DpCallOrInvoke;
         Function *DpFuncEntry, *DpFuncExit;
         Function *DpLoopEntry, *DpLoopExit;
@@ -181,6 +182,15 @@ void DiscoPoP::setupCallbacks()
                                 Void,
                                 Int32));
     DpDecl = cast<Function>(ThisModule->getOrInsertFunction("__dp_decl",
+                             Void,
+#ifdef SKIP_DUP_INSTR
+                             Int32, Int64, CharPtr, Int64, Int64
+#else
+                             Int32, Int64, CharPtr
+#endif
+                             ));
+
+    DpAlloca = cast<Function>(ThisModule->getOrInsertFunction("__dp_alloca",
                              Void,
 #ifdef SKIP_DUP_INSTR
                              Int32, Int64, CharPtr, Int64, Int64
@@ -457,6 +467,9 @@ bool DiscoPoP::runOnFunction(Function &F)
 
     determineFileID(F, fileID);
     
+    if(DP_DEBUG){
+        errs() << "FileID: " << fileID << "\n";
+    }
     // only instrument functions belonging to project source files
     if (!fileID)
         return false;
@@ -508,17 +521,7 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
 {
     if(DP_DEBUG) errs() << "determineVarName: " << *I << "\n";
     assert(I && "Instruction cannot be NULL \n");
-    Value *operand;
-    if (DbgDeclareInst* DbgDeclare = dyn_cast<DbgDeclareInst>(I)){
-        operand = DbgDeclare->getAddress();
-    }                     
-    else{
-        int index = isa<StoreInst>(I) ? 1 : 0;
-        operand = I->getOperand(index);                
-    }
-
     IRBuilder<> builder(I);
-
     return getOrInsertVarName(VNF->getVarName(I), builder);
 }
 
@@ -564,9 +567,12 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
     if(DP_DEBUG) errs() << "runOnBasicBlock: " << BB.getName() << "\n";
     for (BasicBlock::iterator BI = BB.begin(), E = BB.end(); BI != E; ++BI)
     {
+        if(isa<AllocaInst>(BI)){
+            instrumentAllocate(cast<AllocaInst>(BI));
+        }
         if (isa<DbgDeclareInst>(BI))
         {
-            instrumentDeclare(cast<DbgDeclareInst>(BI));
+            // instrumentDeclare(cast<DbgDeclareInst>(BI));
         }
         // load instruction
         else if (isa<LoadInst>(BI))
@@ -744,10 +750,13 @@ void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 
 
 void DiscoPoP::instrumentStore(StoreInst *toInstrument)
-{
-    if(DP_DEBUG) errs () << "instrumentStore: " << *toInstrument << "\n";
+{   
+    DebugLoc dl = toInstrument->getDebugLoc();
+    if(!dl) return;
+
     int32_t lid = getLID(toInstrument, fileID);
     if(lid == 0) return;
+    if(DP_DEBUG) errs () << "instrumentStore: " << *toInstrument << "\n";
 
     Value *operand = toInstrument->getPointerOperand();
 
@@ -868,6 +877,58 @@ void DiscoPoP::instrumentDeclare(DbgDeclareInst *toInstrument)
     addrUpdate->insertAfter(toInstrument);
     incCount->insertAfter(toInstrument);
     countUpdate->insertAfter(incCount);
+#endif
+}
+
+void DiscoPoP::instrumentAllocate(AllocaInst *toInstrument)
+{
+    if(DP_DEBUG) errs () << "instrumentAllocate: " << *toInstrument << "\n";
+    int32_t lid = getLID(toInstrument, fileID);
+    if(lid == 0) return;
+
+    
+
+    vector<Value *> args;
+    args.push_back(ConstantInt::get(Int32, lid));
+    args.push_back(PtrToIntInst::CreatePointerCast(toInstrument, Int64, "", toInstrument->getNextNonDebugInstruction()));
+    args.push_back(determineVarName(toInstrument));
+
+#ifdef SKIP_DUP_INSTR
+    //Value* storeAddr = args[1];
+    //Type* trackerType = v2->getType();
+
+    //cout << "Creating Store " << uniqueNum;
+    Twine name = Twine("S").concat(Twine(uniqueNum));
+
+    GlobalVariable *addrTracker =
+        new GlobalVariable(*this->ThisModule,
+                           Int64,//trackerType
+                           false,
+                           GlobalVariable::PrivateLinkage,
+                           Constant::getNullValue(Int64),//trackerType
+                           name);
+    GlobalVariable *countTracker =
+        new GlobalVariable(*this->ThisModule,
+                           Int64,
+                           false,
+                           GlobalVariable::PrivateLinkage,
+                           Constant::getNullValue(Int64),
+                           name.concat(Twine("count")));
+    uniqueNum++;
+
+    //Load current values before instr
+    LoadInst *currentAddrTracker = new LoadInst::LoadInst(addrTracker, Twine(), toInstrument);
+    LoadInst *currentCount = new LoadInst::LoadInst(countTracker, Twine(), toInstrument);
+
+    //add instr before before
+    args.push_back(currentAddrTracker);
+    args.push_back(currentCount);
+#endif
+    CallInst::Create(DpAlloca, args, "", toInstrument->getNextNonDebugInstruction()->getNextNonDebugInstruction());
+
+#ifdef SKIP_DUP_INSTR
+    //Post instrumentation call
+    //Create updates
 #endif
 }
 

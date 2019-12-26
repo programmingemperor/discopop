@@ -126,8 +126,8 @@ namespace __dp
 
     typedef std::set<LID> ENDFuncList;
 
-    typedef std::set<int32_t> ReportedBBList;
-    typedef std::map<int32_t, std::set<int32_t>> ReportedBBPairMap;
+    typedef std::set<int32_t> ReportedBBSet;
+    typedef std::set<std::string> ReportedBBPairSet;
 
     /******* Helper functions *******/
 
@@ -147,13 +147,16 @@ namespace __dp
         void __dp_read(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
         void __dp_write(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
         void __dp_decl(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
+        void __dp_alloca(LID lid, ADDR addr, char *var, ADDR lastaddr, int64_t count);
 #else
         void __dp_read(LID lid, ADDR addr, char *var);
         void __dp_write(LID lid, ADDR addr, char *var);
         void __dp_decl(LID lid, ADDR addr, char *var);
+        void __dp_alloca(LID lid, ADDR addr, char *var);
 #endif
         void __dp_report_bb(int32_t bbIndex);
-        void __dp_add_omission_deps(char* jsonDeps);
+        void __dp_report_bb_pair(int32_t counter, int32_t bbIndex);
+        void __dp_add_bb_deps(char* depStringPtr);
         void __dp_finalize(LID lid);
         void __dp_call(LID lid);
         void __dp_func_entry(LID lid, int32_t isStart);
