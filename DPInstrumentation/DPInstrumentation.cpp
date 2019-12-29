@@ -751,9 +751,6 @@ void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 
 void DiscoPoP::instrumentStore(StoreInst *toInstrument)
 {   
-    DebugLoc dl = toInstrument->getDebugLoc();
-    if(!dl) return;
-
     int32_t lid = getLID(toInstrument, fileID);
     if(lid == 0) return;
     if(DP_DEBUG) errs () << "instrumentStore: " << *toInstrument << "\n";

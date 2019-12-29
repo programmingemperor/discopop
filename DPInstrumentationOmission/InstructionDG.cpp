@@ -10,7 +10,6 @@ InstructionDG::InstructionDG(dputil::VariableNameFinder *_VNF, InstructionCFG *_
 void InstructionDG::recursiveDepChecker(set<Instruction*>* checkedInstructions, Instruction* I, Instruction* C){
 	if(CFG->isEntryOrExit(C)) return;
 	checkedInstructions->insert(C);
-	// errs() << "\tChecking: " << CFG->getNodeIndex(C) << " :: " << *C;
 	Value *V, *W;
 	if(isa<AllocaInst>(I)) V = dyn_cast<Value>(I);
 	else V = I->getOperand(isa<StoreInst>(I) ? 1 : 0);
@@ -20,11 +19,9 @@ void InstructionDG::recursiveDepChecker(set<Instruction*>* checkedInstructions, 
 
 
 	if(V == W && (isa<StoreInst>(I) || isa<StoreInst>(C))){
-		// errs() << " (yes)\n";
 		Graph::addEdge(I, C);
 		return;
 	}
-	// errs() << " (no)\n";
 	for(auto edge: CFG->getInEdges(C))
 		if(checkedInstructions->find(edge->getSrc()->getItem()) == checkedInstructions->end())
 			recursiveDepChecker(checkedInstructions, I, edge->getSrc()->getItem());
@@ -104,7 +101,8 @@ void InstructionDG::dumpToDot(const string targetPath)
 			else
 				label += "init(";
 		}
-		else label += "read(";
+		else if(isa<LoadInst>(instr)) label += "read(";
+		else label += "alloca(";
 		label += VNF->getVarName(instr);
 		label += ") ";
 

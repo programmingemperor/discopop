@@ -37,8 +37,6 @@ void InstructionCFG::findAndAddFirstRelevantInstructionInSuccessorBlocks(BasicBl
 	for (BasicBlock *S : successors(BB)) {
 		hasSuccessors = true;
 		for (Instruction &I : *S){
-			// DebugLoc dl = I.getDebugLoc();
-			// if(!dl) continue;
 			if(isa<StoreInst>(I) || isa<LoadInst>(I)){
 				Graph::addEdge(previousInstruction, &I);
 				goto next;

@@ -151,19 +151,6 @@ VariableNameFinder::VariableNameFinder(Module &M){
 
 string VariableNameFinder::getVarName(Value const *V){
     if(const Instruction *I = dyn_cast<Instruction>(V)){
-        // errs() << "Instruction: " << *I << " | " << I->getOpcodeName() << "\n";
-        if(isa<AllocaInst>(I)){
-            if(V->hasName()){
-                string r = V->getName().str();
-                std::size_t found = r.find(".addr");
-                if(found != string::npos){
-                    return r.erase(found);
-                }
-                return r;
-            }
-            return "!";
-        }
-
         if(auto GEPI = dyn_cast<GetElementPtrInst>(I)){
             Type *srcElemT = GEPI->getSourceElementType();
             string r = getVarName(GEPI->getOperand(0));
@@ -236,9 +223,14 @@ string VariableNameFinder::getVarName(Value const *V){
     }
     
     if(V->hasName()){
-        return V->getName().str();
+        string r = V->getName().str();
+        std::size_t found = r.find(".addr");
+        if(found != string::npos){
+            return r.erase(found);
+        }
+        return r;
     }
-    return "n/a";
+    return "!";
 }
 
 }//namespace
