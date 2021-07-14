@@ -1,6 +1,7 @@
 # Detect all of the data races
 from ..PETGraphX import *
 from ..utils import classify_loop_variables
+from typing import List, Dict, Set, Tuple
 
 class DoAcrossInfo(object):
     """Class, that contains do-all detection result
