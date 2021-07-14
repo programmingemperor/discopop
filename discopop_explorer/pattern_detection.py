@@ -72,7 +72,7 @@ class PatternDetectorX(object):
         # reduction before doall!
         res.reduction = detect_reduction(self.pet)
         res.do_all = detect_do_all(self.pet)
-        res.do_across = detect_do_across(self.pet)
+        # res.do_across = detect_do_across(self.pet)
         res.pipeline = detect_pipeline(self.pet)
         res.geometric_decomposition = detect_gd(self.pet)
 
