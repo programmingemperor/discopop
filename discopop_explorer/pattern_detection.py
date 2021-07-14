@@ -9,7 +9,7 @@ from typing import List
 
 from .PETGraphX import PETGraphX, NodeType, EdgeType
 from .pattern_detectors.do_all_detector import run_detection as detect_do_all, DoAllInfo
-# from .pattern_detectors.do_across_detector import run_detection as detect_do_across, DoAcrossInfo
+from .pattern_detectors.do_across_detector import run_detection as detect_do_across, DoAcrossInfo
 from .pattern_detectors.geometric_decomposition_detector import run_detection as detect_gd, GDInfo
 from .pattern_detectors.pipeline_detector import run_detection as detect_pipeline, PipelineInfo
 from .pattern_detectors.reduction_detector import run_detection as detect_reduction, ReductionInfo
