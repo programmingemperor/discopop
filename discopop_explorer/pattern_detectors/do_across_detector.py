@@ -1,9 +1,10 @@
 # Detect all of the data races
 from ..PETGraphX import *
+from .PatternInfo import PatternInfo
 from ..utils import classify_loop_variables
 from typing import List, Dict, Set, Tuple
 
-class DoAcrossInfo(object):
+class DoAcrossInfo(PatternInfo):
     """Class, that contains do-all detection result
     """
 
@@ -13,6 +14,7 @@ class DoAcrossInfo(object):
         :param loop_node: loop node, where do-across was detected
         :param node: node, where do-across was detected
         """
+        PatternInfo.__init__(self, loop_node)
         fp, p, lp, s, r = classify_loop_variables(pet, loop_node)
         self.first_private = fp
         self.private = p
