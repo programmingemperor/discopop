@@ -75,7 +75,7 @@ def __detect_do_across(pet:PETGraphX, root:CUNode):
     subnodes = [pet.node_at(t) for s, t, d in pet.out_edges(root.id, EdgeType.CHILD)]
     for i in range (0, len(subnodes)):
         children_cache: Dict[CUNode, List[CUNode]] = dict()
-        dependency_cache: Dict[Tuple[CUNode, CUNode], set[CUNode]] = dict()
+        dependency_cache: Dict[Tuple[CUNode, CUNode], Set[CUNode]] = dict()
         for j in range(i, len(subnodes)):
             dep_list, raw = get_dep(pet, subnodes[i], subnodes[j], root, children_cache=children_cache, dep_cache=dependency_cache)
             if raw:
