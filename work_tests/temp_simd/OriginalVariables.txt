@@ -1,0 +1,8 @@
+a.addr
+b.addr
+a.addr
+b.addr
+i
+j
+result
+retval
