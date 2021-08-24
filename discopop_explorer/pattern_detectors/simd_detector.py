@@ -25,13 +25,13 @@ def func_in_loop(pet:PETGraphX, node:CUNode) -> bool:
                     func_in_loop(pet, lc)
     return True
 
-def loop_no_func(pet:PETGraphX) -> List:
+def loop_no_func(pet:PETGraphX) -> List[CUNode]:
     """ All loops that have no function call
 
         :param pet: PET Graph
         :return: List of Loop Nodes that have no Func Node in it's child node
     """
-    nodes = list()
+    nodes: List[CUNode] = []
     for node in pet.all_nodes(NodeType.LOOP):
         if func_in_loop(pet, node):
             nodes.append[node]
