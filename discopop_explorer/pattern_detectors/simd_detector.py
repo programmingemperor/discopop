@@ -34,7 +34,7 @@ def loop_no_func(pet:PETGraphX) -> List[CUNode]:
     nodes: List[CUNode] = []
     for node in pet.all_nodes(NodeType.LOOP):
         if func_in_loop(pet, node):
-            nodes.append[node[0]]
+            nodes.append(node)
     return nodes
 
 
