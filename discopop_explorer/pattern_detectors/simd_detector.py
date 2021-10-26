@@ -127,7 +127,7 @@ def collapse_counter(pet:PETGraphX, node:CUNode) -> int:
     return 0
 
 
-def innermost_loop(pet:PETGraphX, node:CUNode) -> CUNode:
+def innermost_loop(pet:PETGraphX, node:CUNode):
     """ The innermost loop of a perfectly nested and doall loop
 
         :param pet: PET Graph
