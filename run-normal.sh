@@ -1,20 +1,16 @@
-/home/raynard/discopop/scripts/dp-fmap
+/home/raynardwidjaja/discopop/scripts/dp-fmap
 
-clang++ -g -O0 -fno-discard-value-names -Xclang -load -Xclang /home/raynard/discopop/build/libi/LLVMCUGeneration.so -mllvm -fm-path -mllvm ./FileMapping.txt -c test.c
+#CU Generation
+clang -g -O0 -fno-discard-value-names -Xclang -load -Xclang /home/raynardwidjaja/discopop/build/libi/LLVMCUGeneration.so -mllvm -fm-path -mllvm ./FileMapping.txt -c test.c
 
 #Dependence Profiling
-clang++ -g -O0 -fno-discard-value-names -Xclang -load -Xclang /home/raynard/discopop/build/libi/LLVMDPInstrumentation.so -mllvm -fm-path -mllvm ./FileMapping.txt -c test.c -o out.o
+clang -g -O0 -fno-discard-value-names -Xclang -load -Xclang /home/raynardwidjaja/discopop/build/libi/LLVMDPInstrumentation.so -mllvm -fm-path -mllvm ./FileMapping.txt -c test.c -o test.o
+clang++ test.o -L /home/raynardwidjaja/discopop/build/rtlib -lDiscoPoP_RT -lpthread
 
-clang++ out.o -L /home/raynard/discopop/build/rtlib -lDiscoPoP_RT -lpthread
-
-./a.out
-
+./test
 
 #Reduction
-clang++ -g -O0 -fno-discard-value-names -Xclang -load -Xclang /home/raynard/discopop/build/libi/LLVMDPReduction.so -mllvm -fm-path -mllvm ./FileMapping.txt -c test.c -o out.o
+clang++ -g -O0 -fno-discard-value-names -Xclang -load -Xclang /home/raynardwidjaja/discopop/build/libi/LLVMDPReduction.so -mllvm -fm-path -mllvm ./FileMapping.txt -c test.c -o out.o
+clang++ test.o -L /home/raynardwidjaja/discopop/build/rtlib -lDiscoPoP_RT -lpthread
 
-clang++ out.o -L/home/raynard/discopop/build/rtlib -lDiscoPoP_RT -lpthread
-
-./a.out
-
-mv a.out_dep.txt dp_run_dep.txt
+./test

@@ -34,4 +34,8 @@
 34	/home/raynard/discopop/test/mergesort/mergesort.cpp
 35	/home/raynard/discopop/test/reduction/reduction_test.c
 36	/home/raynard/discopop/test/simple_pipeline/SimplePipeline.c
-37	/home/raynard/discopop/work_tests/micro/test.c
+37	/home/raynard/discopop/work_tests/dac_test/test.c
+38	/home/raynard/discopop/work_tests/example_code/test.c
+39	/home/raynard/discopop/work_tests/micro/test.c
+40	/home/raynard/discopop/work_tests/selftest/test.c
+41	/home/raynard/discopop/work_tests/temp_simd/test.c

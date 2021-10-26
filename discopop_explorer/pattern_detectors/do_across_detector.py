@@ -5,7 +5,7 @@ from ..utils import classify_loop_variables
 from typing import List, Dict, Set, Tuple
 
 class DoAcrossInfo(PatternInfo):
-    """Class, that contains do-all detection result
+    """Class, that contains do-across detection result
     """
 
     def __init__(self, pet:PETGraphX, loop_node:CUNode, node: CUNode):
