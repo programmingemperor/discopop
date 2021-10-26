@@ -4,7 +4,7 @@ from .PatternInfo import PatternInfo
 from ..utils import *
 from typing import List, Dict, Set, Tuple
 from ..parser import *
-from do_all_detector import __detect_do_all
+from discopop_explorer.pattern_detectors.do_all_detector import __detect_do_all
 
 class SIMDInfo(PatternInfo):
     pass
@@ -124,6 +124,7 @@ def collapse_counter(pet:PETGraphX, node:CUNode) -> int:
             subnodes = find_subnodes(pet, loop, EdgeType.CHILD)
         else:
             return counter + 1
+    return 0
 
 
 def innermost_loop(pet:PETGraphX, node:CUNode) -> CUNode:
@@ -150,6 +151,7 @@ def innermost_loop(pet:PETGraphX, node:CUNode) -> CUNode:
                 subnodes = find_subnodes(pet, loop, EdgeType.CHILD)
             else:
                 return loop_node
+        return None
 
 def func_in_cu(pet:PETGraphX, node:CUNode)->bool:
     """ Determine if a CU node has a child, that is a FUNC node
