@@ -3,9 +3,8 @@ from ..PETGraphX import *
 from .PatternInfo import PatternInfo
 from ..parser import *
 from ..utils import *
-from do_all_detector import __detect_do_all
 from typing import List, Dict, Set, Tuple
-from pattern_detectors.do_all_detector import __detect_do_all
+from discopop_explorer.pattern_detectors.do_all_detector import __detect_do_all
 
 class SIMDInfo(PatternInfo):
     """ Class, that contains do-across detection result
@@ -217,3 +216,4 @@ def run_detection(pet:PETGraphX) -> List[SIMDInfo]:
             node.do_all = True
             if not node.reduction and node.loop_iterations > 0:
                 result.append(SIMDInfo(pet, node))
+    return result
