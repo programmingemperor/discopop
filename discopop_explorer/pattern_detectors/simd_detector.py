@@ -1,13 +1,50 @@
 # implementing vectorization opportunity
-from ..PETGraphX import *
-from .PatternInfo import PatternInfo
-from ..utils import *
-from typing import List, Dict, Set, Tuple
-from ..parser import *
+from PatternInfo import PatternInfo
+from discopop_explorer.utils import *
+from discopop_explorer.parser import *
+from discopop_explorer.PETGraphX import *
 from discopop_explorer.pattern_detectors.do_all_detector import __detect_do_all
 
 class SIMDInfo(PatternInfo):
-    pass
+    """ Class, that contains do-across detection result
+    """
+
+    def __init__(self, pet: PETGraphX, node: CUNode):
+        fp, p, lp, s, r = classify_loop_variables(pet, node)
+        self.private = p
+        self.last_private = lp
+        self.reduction = r
+
+    def __str__(self):
+        inner = innermost_loop(self.pet, self.node)
+        fpi, pi, lpi, si, ri = classify_loop_variables(self.pet, inner)
+        if self.node.do_all and nested(self.pet, self.node):
+            collapse = collapse_counter(self.pet, self.node)
+            return f'SIMD parallelization opportunity' \
+                   f'Option 1' \
+                   f'Start line: {self.start_line}\n' \
+                   f'End line: {self.end_line}\n' \
+                   f'pragma: "#pragma omp simd collapse({collapse})"\n' \
+                   f'private: {[v.name for v in self.private]}\n' \
+                   f'reduction: {[v.name for v in self.reduction]}\n' \
+                   f'last private: {[v.name for v in self.last_private]}'\
+                   f'Option 2' \
+                   f'Start line: {inner.start_line}\n' \
+                   f'End line: {inner.end_line}\n' \
+                   f'pragma: "#pragma omp simd "\n' \
+                   f'private: {[v.name for v in fpi]}\n' \
+                   f'reduction: {[v.name for v in ri]}\n' \
+                   f'last private: {[v.name for v in lpi]}'
+
+        else:
+            return f'SIMD parallelization opportunity' \
+                   f'Start line: {inner.start_line}\n' \
+                   f'End line: {inner.end_line}\n' \
+                   f'pragma: "#pragma omp simd "\n' \
+                   f'private: {[v.name for v in fpi]}\n' \
+                   f'reduction: {[v.name for v in ri]}\n' \
+                   f'last private: {[v.name for v in lpi]}'
+
 
 def __nested_help(subnodes: List[CUNode]) -> bool:
     """ Help function to determine if the list of CU Node still fulfills the condition of a perfectly nested loop
@@ -45,7 +82,7 @@ def __contain_loop(subnodes: List[CUNode]):
 
     return contain, loop
 
-def __nested(pet:PETGraphX, node:CUNode) -> bool:
+def nested(pet:PETGraphX, node:CUNode) -> bool:
     """ Determine if a loop is perfectly nested
 
         :param pet: PET Graph
@@ -70,7 +107,7 @@ def __nested(pet:PETGraphX, node:CUNode) -> bool:
 
     return True
 
-def __outer_loop(pet:PETGraphX) -> List[CUNode]:
+def outer_loop(pet:PETGraphX) -> List[CUNode]:
     """ All outer loop nodes
 
         :param pet: PET Graph
@@ -85,22 +122,7 @@ def __outer_loop(pet:PETGraphX) -> List[CUNode]:
                 temp = False
         if temp:
             outer_loop.append(loop)
-
     return outer_loop
-
-def perf_nested_loop(pet:PETGraphX) -> List[CUNode]:
-    """ All loops that are doall loops and perfectly nested
-
-        :param pet: PET Graph
-        :return: List of outer loop nodes that are a perfectly nested loop
-    """
-    outer_loop: List[CUNode] = __outer_loop(pet)
-
-    nodes: List[CUNode] = []
-    for node in outer_loop:
-        if __nested(pet, node) and __detect_do_all(pet, node):
-            nodes.append(node)
-    return nodes
 
 def collapse_counter(pet:PETGraphX, node:CUNode) -> int:
     """ Count the number of loops that could be collapsed
@@ -127,8 +149,8 @@ def collapse_counter(pet:PETGraphX, node:CUNode) -> int:
     return 0
 
 
-def innermost_loop(pet:PETGraphX, node:CUNode):
-    """ The innermost loop of a perfectly nested and doall loop
+def innermost_loop(pet:PETGraphX, node:CUNode) -> CUNode:
+    """ The innermost loop of a perfectly nested loop
 
         :param pet: PET Graph
         :param node: Outermost loop node
@@ -151,9 +173,8 @@ def innermost_loop(pet:PETGraphX, node:CUNode):
                 subnodes = find_subnodes(pet, loop, EdgeType.CHILD)
             else:
                 return loop_node
-        return None
 
-def func_in_cu(pet:PETGraphX, node:CUNode)->bool:
+def __func_in_cu(pet:PETGraphX, node:CUNode)->bool:
     """ Determine if a CU node has a child, that is a FUNC node
 
         :param pet: PET Graph
@@ -179,9 +200,18 @@ def loop_no_func(pet:PETGraphX, cunode:CUNode) -> bool:
     """
     subnodes = find_subnodes(pet, cunode, EdgeType.CHILD)
     for node in subnodes:
-        if node.type == NodeType.CU and func_in_cu(pet, node):
+        if node.type == NodeType.CU and __func_in_cu(pet, node):
             return False
         elif node.type == NodeType.LOOP:
             temp = find_subnodes(pet, node, EdgeType.CHILD)
             subnodes.extend(temp)
     return True
+
+def run_detection(pet:PETGraphX) -> List[SIMDInfo]:
+
+    result = []
+    for node in outer_loop(pet):
+        if __detect_do_all(pet, node):
+            node.do_all = True
+            if not node.reduction and node.loop_iterations > 0:
+                result.append(SIMDInfo(pet, node))
