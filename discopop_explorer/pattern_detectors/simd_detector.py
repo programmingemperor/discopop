@@ -1,9 +1,11 @@
 # implementing vectorization opportunity
-from PatternInfo import PatternInfo
-from discopop_explorer.utils import *
-from discopop_explorer.parser import *
-from discopop_explorer.PETGraphX import *
-from discopop_explorer.pattern_detectors.do_all_detector import __detect_do_all
+from ..PETGraphX import *
+from .PatternInfo import PatternInfo
+from ..parser import *
+from ..utils import *
+from do_all_detector import __detect_do_all
+from typing import List, Dict, Set, Tuple
+from pattern_detectors.do_all_detector import __detect_do_all
 
 class SIMDInfo(PatternInfo):
     """ Class, that contains do-across detection result
@@ -149,7 +151,7 @@ def collapse_counter(pet:PETGraphX, node:CUNode) -> int:
     return 0
 
 
-def innermost_loop(pet:PETGraphX, node:CUNode) -> CUNode:
+def innermost_loop(pet:PETGraphX, node:CUNode):
     """ The innermost loop of a perfectly nested loop
 
         :param pet: PET Graph
