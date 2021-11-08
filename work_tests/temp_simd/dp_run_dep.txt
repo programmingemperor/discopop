@@ -1,0 +1,53 @@
+START 1:8
+1:43 BGN loop 10
+1:49 END loop
+1:30 BGN loop 7
+1:33 END loop
+1:28 BGN loop 5
+1:34 END loop
+1:21 BGN loop 7
+1:24 END loop
+1:20 BGN loop 5
+1:25 END loop
+1:19 BGN loop 10
+1:27 END loop
+1:27 BGN loop 10
+1:36 END loop
+1:14 BGN loop 5
+1:17 END loop
+1:39 BGN loop 10
+1:43 END loop
+1:13 BGN loop 10
+1:19 END loop
+1:15 BGN func 1:4
+1:5 END func
+1:52 NOM  RAW 1:8|retval
+1:27 NOM  RAW 1:27|i WAR 1:19|i WAR 1:27|i
+1:19 NOM  RAW 1:19|i WAR 1:13|i WAR 1:19|i
+1:13 NOM  INIT *|i RAW 1:13|i WAR 1:13|i
+1:38 NOM  INIT *|sum
+1:29 NOM  INIT *|temp RAW 1:27|i RAW 1:28|j WAR 1:31|temp
+1:21 NOM  INIT *|k RAW 1:21|k WAR 1:21|k
+1:30 NOM  RAW 1:30|k WAR 1:21|k WAR 1:30|k
+1:50 NOM  RAW 1:22|result2
+1:45 NOM  RAW 1:43|i RAW 1:44|a WAR 1:44|b
+1:39 NOM  RAW 1:39|i WAR 1:27|i WAR 1:39|i
+1:20 NOM  RAW 1:20|j WAR 1:14|j WAR 1:20|j
+1:28 NOM  RAW 1:28|j WAR 1:20|j WAR 1:28|j
+1:10 NOM  INIT *|result2
+1:11 NOM  INIT *|result3
+1:49 NOM  RAW 1:15|result
+1:44 NOM  INIT *|a RAW 1:40|a RAW 1:41|b RAW 1:43|i RAW 1:44|a WAW 1:40|a
+1:22 NOM  RAW 1:19|i RAW 1:20|j RAW 1:21|k WAW 1:10|result2 WAW 1:22|result2
+1:15 NOM  RAW 1:13|i RAW 1:14|j WAW 1:15|result WAW 1:9|result
+1:9 NOM  INIT *|result
+1:5 NOM  RAW 1:4|a.addr RAW 1:4|b.addr
+1:8 NOM  INIT *|retval
+1:40 NOM  INIT *|a RAW 1:39|i
+1:4 NOM  INIT *|a.addr INIT *|b.addr WAR 1:5|a.addr WAR 1:5|b.addr
+1:31 NOM  RAW 1:29|temp RAW 1:30|k WAW 1:11|result3 WAW 1:31|result3
+1:51 NOM  RAW 1:31|result3
+1:41 NOM  INIT *|b RAW 1:39|i
+1:14 NOM  INIT *|j RAW 1:14|j WAR 1:14|j
+1:43 NOM  RAW 1:43|i WAR 1:39|i WAR 1:43|i
+1:52 END program
