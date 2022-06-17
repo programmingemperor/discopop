@@ -42,10 +42,16 @@
 #include "llvm/IR/LegacyPassManager.h"
 
 #include "DPUtils.h"
+#include "discopop.h"
 
 #include <set>
 #include <map>
 #include <cstdlib>
+
+#include <algorithm>
+#include <iomanip>
+#include <string.h>
+#include <utility>
 
 #define DP_DEBUG false
 
@@ -54,109 +60,109 @@ using namespace std;
 using namespace dputil;
 
 // Command line options
-static cl::opt<bool> ClCheckLoopPar("dp-loop-par", cl::init(true),
-                                    cl::desc("Check loop parallelism"), cl::Hidden);
+// static cl::opt<bool> ClCheckLoopPar("dp-loop-par", cl::init(true),
+//                                     cl::desc("Check loop parallelism"), cl::Hidden);
 
-namespace
-{
+// namespace
+// {
 
     // DiscoPoP: instrument the code in module to find potential parallelism
-    class DiscoPoP : public FunctionPass
-    {
-    public:
-        DiscoPoP() : FunctionPass(ID), uniqueNum(1) {};
-        ~DiscoPoP();
+    // class DiscoPoP : public FunctionPass
+    // {
+    // public:
+        // DiscoPoP() : FunctionPass(ID), uniqueNum(1) {};
+        // ~DiscoPoP();
 
-        StringRef getPassName() const;
-        bool runOnFunction(Function &F);
-        void runOnBasicBlock(BasicBlock &BB);
-        bool doInitialization(Module &M);
-        void getAnalysisUsage(AnalysisUsage &Info) const;
+        // StringRef getPassName() const;
+        // bool runOnFunction(Function &F);
+        // void runOnBasicBlock(BasicBlock &BB);
+        // bool doInitialization(Module &M);
+        // void getAnalysisUsage(AnalysisUsage &Info) const;
 
-        static char ID; // Pass identification, replacement for typeid
+        // static char ID; // Pass identification, replacement for typeid
 
-    private:
-        // Initializations
-        void setupDataTypes();
-        void setupCallbacks();
+    // private:
+        // // Initializations
+        // void setupDataTypes();
+        // void setupCallbacks();
 
-        // Helper functions
-        bool isaCallOrInvoke(Instruction *BI);
-        bool sanityCheck(BasicBlock *BB);
-        void collectDebugInfo();
-        void processStructTypes(string const &fullStructName, MDNode *structNode);
-        DIGlobalVariable *findDbgGlobalDeclare(GlobalVariable *V);
-        Value *getOrInsertVarName(string varName, IRBuilder<> &builder);
-        Value *findStructMemberName(MDNode *structNode, unsigned idx, IRBuilder<> &builder);
-        Type *pointsToStruct(PointerType *PTy);
-        Value *determineVarName(Instruction *const I);
+        // // Helper functions
+        // bool isaCallOrInvoke(Instruction *BI);
+        // bool sanityCheck(BasicBlock *BB);
+        // void collectDebugInfo();
+        // void processStructTypes(string const &fullStructName, MDNode *structNode);
+        // DIGlobalVariable *findDbgGlobalDeclare(GlobalVariable *V);
+        // Value *getOrInsertVarName(string varName, IRBuilder<> &builder);
+        // Value *findStructMemberName(MDNode *structNode, unsigned idx, IRBuilder<> &builder);
+        // Type *pointsToStruct(PointerType *PTy);
+        // Value *determineVarName(Instruction *const I);
 
-        // Control flow analysis
-        void CFA(Function &F, LoopInfo &LI);
+        // // Control flow analysis
+        // void CFA(Function &F, LoopInfo &LI);
 
-        // Callback Inserters
-        //void insertDpInit(const vector<Value*> &args, Instruction *before);
-        //void insertDpFinalize(Instruction *before);
-        void instrumentStore(StoreInst *toInstrument);
-        void instrumentLoad(LoadInst *toInstrument);
-        void insertDpFinalize(Instruction *before);
-        void instrumentFuncEntry(Function &F);
-        void instrumentLoopEntry(BasicBlock *bb, int32_t id);
-        void instrumentLoopExit(BasicBlock *bb, int32_t id);
+        // // Callback Inserters
+        // //void insertDpInit(const vector<Value*> &args, Instruction *before);
+        // //void insertDpFinalize(Instruction *before);
+        // void instrumentStore(StoreInst *toInstrument);
+        // void instrumentLoad(LoadInst *toInstrument);
+        // void insertDpFinalize(Instruction *before);
+        // void instrumentFuncEntry(Function &F);
+        // void instrumentLoopEntry(BasicBlock *bb, int32_t id);
+        // void instrumentLoopExit(BasicBlock *bb, int32_t id);
 
-        int64_t uniqueNum;
+        // int64_t uniqueNum;
 
-        // Callbacks to run-time library
-        Function *DpInit, *DpFinalize;
-        Function *DpRead, *DpWrite;
-        Function *DpCallOrInvoke;
-        Function *DpFuncEntry, *DpFuncExit;
-        Function *DpLoopEntry, *DpLoopExit;
+        // // Callbacks to run-time library
+        // Function *DpInit, *DpFinalize;
+        // Function *DpRead, *DpWrite;
+        // Function *DpCallOrInvoke;
+        // Function *DpFuncEntry, *DpFuncExit;
+        // Function *DpLoopEntry, *DpLoopExit;
 
-        // Basic types
-        Type *Void;
-        IntegerType *Int32, *Int64;
-        PointerType *CharPtr;
+        // // Basic types
+        // Type *Void;
+        // IntegerType *Int32, *Int64;
+        // PointerType *CharPtr;
 
-        // Control flow analysis
-        int32_t loopID;
-        int32_t fileID;
+        // // Control flow analysis
+        // int32_t loopID;
+        // int32_t fileID;
 
-        // Output streams
-        ofstream ocfg;
+        // // Output streams
+        // ofstream ocfg;
 
-        // Export Module M from runOnModule() to the whole structure space
-        Module *ThisModule;
-        LLVMContext *ThisModuleContext;
+        // // Export Module M from runOnModule() to the whole structure space
+        // Module *ThisModule;
+        // LLVMContext *ThisModuleContext;
 
-        map<string, Value *> VarNames;
-        set<DIGlobalVariable *> GlobalVars;
-        map<string, MDNode *> Structs;
-    };
-}  // namespace
+        // map<string, Value *> VarNames;
+        // set<DIGlobalVariable *> GlobalVars;
+        // map<string, MDNode *> Structs;
+    // };
+// }  // namespace
 
-char DiscoPoP::ID = 0;
+// char DiscoPoP::ID = 0;
 
-static RegisterPass<DiscoPoP> X("DiscoPoP", "DiscoPoP: finding potential parallelism.", false, false);
+// static RegisterPass<DiscoPoP> X("DiscoPoP", "DiscoPoP: finding potential parallelism.", false, false);
 
-static void loadPass(const PassManagerBuilder &Builder, legacy::PassManagerBase &PM)
-{
-    PM.add(new LoopInfoWrapperPass());
-    PM.add(new DiscoPoP());
-}
+// static void loadPass(const PassManagerBuilder &Builder, legacy::PassManagerBase &PM)
+// {
+//     PM.add(new LoopInfoWrapperPass());
+//     PM.add(new DiscoPoP());
+// }
 
-static RegisterStandardPasses DiscoPoPLoader_Ox(PassManagerBuilder::EP_OptimizerLast, loadPass);
-static RegisterStandardPasses DiscoPoPLoader_O0(PassManagerBuilder::EP_EnabledOnOptLevel0, loadPass);
+// static RegisterStandardPasses DiscoPoPLoader_Ox(PassManagerBuilder::EP_OptimizerLast, loadPass);
+// static RegisterStandardPasses DiscoPoPLoader_O0(PassManagerBuilder::EP_EnabledOnOptLevel0, loadPass);
 
-FunctionPass *createDiscoPoPPass()
-{
-    if (DP_DEBUG)
-    {
-        errs() << "create DiscoPoP \n";
-    }
-    initializeLoopInfoWrapperPassPass(*PassRegistry::getPassRegistry());
-    return new DiscoPoP();
-}
+// FunctionPass *createDiscoPoPPass()
+// {
+//     if (DP_DEBUG)
+//     {
+//         errs() << "create DiscoPoP \n";
+//     }
+//     initializeLoopInfoWrapperPassPass(*PassRegistry::getPassRegistry());
+//     return new DiscoPoP();
+// }
 
 StringRef DiscoPoP::getPassName() const
 {
@@ -232,6 +238,26 @@ bool DiscoPoP::doInitialization(Module &M)
     {
         errs() << "DiscoPoP | 190: init pass DiscoPoP \n";
     }
+
+// CUGeneration
+CUIDCounter = 0;
+  defaultIsGlobalVariableValue = false;
+  ThisModule = &M;
+  outCUIDCounter = NULL;
+
+  initializeCUIDCounter();
+
+  for (Module::global_iterator I = ThisModule->global_begin();
+       I != ThisModule->global_end(); I++) {
+    Value *globalVariable = dyn_cast<Value>(I);
+    string glo = string(globalVariable->getName());
+    if (glo.find(".") == glo.npos) {
+      programGlobalVariablesSet.insert(glo);
+      // originalVariablesSet.insert(glo);
+    }
+  }
+// CUGeneration end
+
     // Export M to the outside
     ThisModule = &M;
     ThisModuleContext = &(M.getContext());
@@ -267,6 +293,16 @@ bool DiscoPoP::doInitialization(Module &M)
     return true;
 }
 
+bool DiscoPoP::doFinalization(Module &M) {
+  // write the current count of CUs to a file to avoid duplicate CUs.
+  if (outCUIDCounter && outCUIDCounter->is_open()) {
+    *outCUIDCounter << CUIDCounter;
+    outCUIDCounter->flush();
+    outCUIDCounter->close();
+  }
+  return true;
+}
+
 DiscoPoP::~DiscoPoP()
 {
     if (ocfg.is_open())
@@ -276,10 +312,599 @@ DiscoPoP::~DiscoPoP()
     }
 }
 
-void DiscoPoP::getAnalysisUsage(AnalysisUsage &Info) const
+void DiscoPoP::getAnalysisUsage(AnalysisUsage &AU) const
 {
-    Info.addRequired<LoopInfoWrapperPass>();
+    AU.addRequiredTransitive<RegionInfoPass>();
+  // NOTE: changed 'LoopInfo' to 'LoopInfoWrapperPass'
+    AU.addRequired<LoopInfoWrapperPass>();
+    AU.addPreserved<LoopInfoWrapperPass>();
+  // Get recursive functions called in loops. (Mo 5.11.2019)
+  AU.addRequired<CallGraphWrapperPass>();
+  AU.setPreservesAll();
 }
+
+// CUGeneration
+
+void DiscoPoP::getFunctionReturnLines(Region *TopRegion, Node *root) {
+  int lid = 0;
+  for (Region::block_iterator bb = TopRegion->block_begin();
+       bb != TopRegion->block_end(); ++bb) {
+    for (BasicBlock::iterator instruction = (*bb)->begin();
+         instruction != (*bb)->end(); ++instruction) {
+      if (isa<StoreInst>(instruction)) {
+        string varName = determineVariableName(&*instruction);
+        size_t pos = varName.find("retval");
+        if (pos != varName.npos) {
+          lid = getLID(&*instruction, fileID);
+          // errs() << "varName: " << varName << " " << dputil::decodeLID(lid)
+          // << "\n";
+          if (lid > 0)
+            root->returnLines.insert(lid);
+        }
+      }
+    }
+  }
+}
+
+string DiscoPoP::determineVariableDefLine(Instruction *I) {
+  string varDefLine{"LineNotFound"};
+
+  string varName = determineVariableName(&*I);
+  // varName = refineVarName(varName);
+  varName = (varName.find(".addr") == varName.npos)
+                ? varName
+                : varName.erase(varName.find(".addr"), 5);
+  // varName.erase(varName.find(".addr"), 5);
+  // size_t pos = varName.find(".addr");
+  // if (pos != varName.npos)
+  //     varName.erase(varName.find(".addr"), 5);
+
+  string varType = determineVariableType(&*I);
+
+  if (programGlobalVariablesSet.count(varName)) {
+    varDefLine = "GlobalVar";
+    // TODO: Find definition line of global variables
+  }
+
+  // Start from the beginning of a function and look for the variable
+  Function *F = I->getFunction();
+  for (Function::iterator FI = F->begin(), FE = F->end(); FI != FE; ++FI) {
+    BasicBlock &BB = *FI;
+    for (BasicBlock::iterator BI = BB.begin(), E = BB.end(); BI != E; ++BI) {
+      if (DbgDeclareInst *DI = dyn_cast<DbgDeclareInst>(BI)) {
+
+        if (auto *N = dyn_cast<MDNode>(DI->getVariable())) {
+          if (auto *DV = dyn_cast<DILocalVariable>(N)) {
+            if (varType.find("ARRAY") != string::npos ||
+                varType.find("STRUCT") != string::npos) {
+              if (DV->getName() == varName) {
+                varDefLine = to_string(fileID) + ":" + to_string(DV->getLine());
+                break;
+              }
+            } else {
+              string vn = "----";
+              AllocaInst *AI = dyn_cast_or_null<AllocaInst>(DI->getAddress());
+              if (AI) {
+                for (User *U : AI->users()) {
+                  if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
+                    vn = determineVariableName(&*SI);
+                    break;
+                  } else if (LoadInst *LI = dyn_cast<LoadInst>(U)) {
+                    vn = determineVariableName(&*LI);
+                    break;
+                  }
+                }
+                if (vn == varName) {
+                  varDefLine =
+                      to_string(fileID) + ":" + to_string(DV->getLine());
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return varDefLine;
+}
+
+
+string DiscoPoP::determineVariableType(Instruction *I) {
+  string s = "";
+  string type_str;
+  int index = isa<StoreInst>(I) ? 1 : 0;
+  raw_string_ostream rso(type_str);
+  (*((I->getOperand(index))->getType())).print(rso);
+
+  Value *operand = I->getOperand(index);
+
+  if (operand->hasName()) {
+    if (isa<GetElementPtrInst>(*operand)) {
+      GetElementPtrInst *gep = cast<GetElementPtrInst>(operand);
+      Value *ptrOperand = gep->getPointerOperand();
+      PointerType *PTy = cast<PointerType>(ptrOperand->getType());
+      // we've found a struct/class
+      Type *structType = pointsToStruct(PTy);
+      if (structType && gep->getNumOperands() > 2) {
+        s = "STRUCT,";
+      }
+      // we've found an array
+      if (PTy->getElementType()->getTypeID() == Type::ArrayTyID) {
+        s = "ARRAY,";
+      }
+    }
+  }
+
+  s = s + rso.str();
+  return s;
+}
+
+// recieves the region and outputs all variables and variables crossing basic
+// block boundaries in the region.
+void DiscoPoP::populateGlobalVariablesSet(Region *TopRegion,
+                                              set<string> &globalVariablesSet) {
+
+  map<string, BasicBlock *> variableToBBMap;
+  bool isGlobalVariable;
+  for (Region::block_iterator bb = TopRegion->block_begin();
+       bb != TopRegion->block_end(); ++bb) {
+    for (BasicBlock::iterator instruction = (*bb)->begin();
+         instruction != (*bb)->end(); ++instruction) {
+      if (isa<LoadInst>(instruction) || isa<StoreInst>(instruction) ||
+          isa<CallInst>(instruction)) {
+
+        // string varName = refineVarName(determineVariableName(instruction,
+        // isGlobalVariable));
+        // NOTE: changed 'instruction' to '&*instruction'
+        string varName = determineVariableName(&*instruction, isGlobalVariable);
+
+        if (isGlobalVariable) // add it if it is a global variable in the
+                              // program
+        {
+          programGlobalVariablesSet.insert(varName);
+        }
+
+        if (variableToBBMap.find(varName) != variableToBBMap.end()) {
+          // this var has already once recordded. check for bb id
+          if (variableToBBMap[varName] != *bb) {
+            // global variable found. Insert into the globalVariablesSet
+            globalVariablesSet.insert(varName);
+          }
+        } else {
+          // record usage of the variable.
+          variableToBBMap.insert(pair<string, BasicBlock *>(varName, *bb));
+          // errs() << varName << "\n";
+        }
+      }
+    }
+  }
+}
+
+void DiscoPoP::createCUs(Region *TopRegion, set<string> &globalVariablesSet,
+                             vector<CU *> &CUVector,
+                             map<string, vector<CU *>> &BBIDToCUIDsMap,
+                             Node *root, LoopInfo &LI) {
+  // NOTE: changed 'ThisModule->getDataLayout()' to
+  // '&ThisModule->getDataLayout()'
+  const DataLayout *DL =
+      &ThisModule->getDataLayout(); // used to get data size of variables,
+                                    // pointers, structs etc.
+  Node *currentNode = root;
+  CU *cu;
+  int lid;
+  string varName;
+  string varType;
+  set<string> suspiciousVariables;
+  string basicBlockName;
+
+  map<Loop *, Node *> loopToNodeMap;
+
+  for (Region::block_iterator bb = TopRegion->block_begin();
+       bb != TopRegion->block_end(); ++bb) {
+
+    // Get the closest loop where bb lives in.
+    // (loop == NULL) if bb is not in any loop.
+    Loop *loop = LI.getLoopFor(*bb);
+    if (loop) {
+      // if bb is in a loop and if we have already created a node for that loop,
+      // assign it to currentNode.
+      if (loopToNodeMap.find(loop) != loopToNodeMap.end()) {
+        currentNode = loopToNodeMap[loop];
+        // errs() << "))))) " << dputil::decodeLID(currentNode->startLine) << "
+        // " << dputil::decodeLID(currentNode->endLine) << "\n";
+      }
+      // else, create a new Node for the loop, add it as children of currentNode
+      // and add it to the map.
+      else {
+        if (bb->getName().size() != 0) {
+          // errs() << "Name: " << bb->getName() << "\n";
+        }
+
+        Node *n = new Node;
+        n->type = nodeTypes::loop;
+        n->parentNode = currentNode;
+        currentNode->childrenNodes.push_back(n);
+
+        loopToNodeMap[loop] = n;
+        currentNode = n;
+        // errs() << "--bb->Name: " << bb->getName() << " , " << "node->ID: " <<
+        // currentNode->ID << "\n";
+      }
+    } else {
+      if (bb->getName().size() != 0) {
+        // errs() << "bb Name: " << bb->getName() << "\n";
+      }
+      // end of loops. go to the parent of the loop. may have to jump several
+      // nodes in case of nested loops
+      for (map<Loop *, Node *>::iterator it = loopToNodeMap.begin();
+           it != loopToNodeMap.end(); it++)
+        if (it->second ==
+            currentNode) // current node found in loop map jump to its parent.
+        {
+          currentNode = currentNode->parentNode;
+          it = loopToNodeMap
+                   .begin(); // search the whole map again for current node
+          if (it->second == currentNode) // due to it++ we need to check first
+                                         // element of map ourself
+            currentNode = currentNode->parentNode;
+        }
+    }
+
+    cu = new CU;
+
+    // errs() << "==== " << bb->getName() << "\n"; //"cu->ID: " << cu->ID << " ,
+    // " << "node->ID: " << currentNode->ID << " , " << "tmpNode->ID: " <<
+    // tmpNode->ID << " , " << "bb->Name: " << bb->getName() << "\n";
+
+    if (bb->getName().size() == 0)
+      bb->setName(cu->ID);
+
+    cu->BBID = bb->getName();
+    cu->BB = *bb; // Mohammad 23.12.2020
+    currentNode->childrenNodes.push_back(cu);
+    vector<CU *> basicBlockCUVector;
+    basicBlockCUVector.push_back(cu);
+    BBIDToCUIDsMap.insert(
+        pair<string, vector<CU *>>(bb->getName(), basicBlockCUVector));
+
+    for (BasicBlock::iterator instruction = (*bb)->begin();
+         instruction != (*bb)->end(); ++instruction) {
+      // NOTE: 'instruction' --> '&*instruction'
+      lid = getLID(&*instruction, fileID);
+      basicBlockName = bb->getName();
+      if (lid > 0) {
+        cu->instructionsLineNumbers.insert(lid);
+        cu->instructionsCount++;
+        // find return instructions
+        if (isa<ReturnInst>(instruction)) {
+          cu->returnInstructions.insert(lid);
+        }
+        // find branches to return instructions, i.e. return statements
+        // Lukas 21.09.20
+        else if (isa<BranchInst>(instruction)) {
+          if ((cast<BranchInst>(instruction))->isUnconditional()) {
+            if ((cast<BranchInst>(instruction))->getNumSuccessors() == 1) {
+              BasicBlock *successorBB =
+                  (cast<BranchInst>(instruction))->getSuccessor(0);
+              for (BasicBlock::iterator innerInstruction = successorBB->begin();
+                   innerInstruction != successorBB->end(); ++innerInstruction) {
+                if (isa<ReturnInst>(innerInstruction)) {
+                  cu->returnInstructions.insert(lid);
+                  break;
+                }
+              }
+            }
+          }
+        }
+        //}
+        if (isa<StoreInst>(instruction)) {
+
+          // get size of data written into memory by this store instruction
+          Value *operand = instruction->getOperand(1);
+          Type *Ty = operand->getType();
+          unsigned u = DL->getTypeSizeInBits(Ty);
+          cu->writeDataSize += u;
+          // varName = refineVarName(determineVariableName(instruction));
+          varName = determineVariableName(&*instruction);
+          varType = determineVariableType(&*instruction);
+          // if(globalVariablesSet.count(varName) ||
+          // programGlobalVariablesSet.count(varName))
+          {
+            suspiciousVariables.insert(varName);
+            if (lid > 0)
+              cu->writePhaseLineNumbers.insert(lid);
+          }
+        } else if (isa<LoadInst>(instruction)) {
+
+          // get size of data read from memory by this load instruction
+          Type *Ty = instruction->getType();
+          unsigned u = DL->getTypeSizeInBits(Ty);
+          cu->readDataSize += u;
+          // varName = refineVarName(determineVariableName(instruction));
+          varName = determineVariableName(&*instruction);
+          if (suspiciousVariables.count(varName)) {
+            // VIOLATION OF CAUTIOUS PROPERTY
+            // it is a load instruction which read the value of a global
+            // variable.
+            // This global variable has already been stored previously.
+            // A new CU should be created here.
+            cu->readPhaseLineNumbers.erase(lid);
+            cu->writePhaseLineNumbers.erase(lid);
+            cu->instructionsLineNumbers.erase(lid);
+            cu->instructionsCount--;
+            if (cu->instructionsLineNumbers.empty()) {
+              cu->removeCU();
+              cu->startLine = -1;
+              cu->endLine = -1;
+            } else {
+              cu->startLine = *(cu->instructionsLineNumbers.begin());
+              cu->endLine = *(cu->instructionsLineNumbers.rbegin());
+            }
+            cu->basicBlockName = basicBlockName;
+            CUVector.push_back(cu);
+            suspiciousVariables.clear();
+            CU *temp =
+                cu; // keep current CU to make a reference to the successor CU
+            cu = new CU;
+
+            cu->BBID = bb->getName();
+            cu->BB = *bb; // Mohammad 23.12.2020
+            // errs() << "bb->Name: "  << bb->getName() << " , " << "cu->ID: "
+            // << cu->ID  << " , " << "node->ID: " << currentNode->ID << "\n";
+
+            currentNode->childrenNodes.push_back(cu);
+            temp->successorCUs.push_back(cu->ID);
+            BBIDToCUIDsMap[bb->getName()].push_back(cu);
+            if (lid > 0) {
+              cu->readPhaseLineNumbers.insert(lid);
+              cu->instructionsLineNumbers.insert(lid);
+            }
+          } else {
+            if (globalVariablesSet.count(varName) ||
+                programGlobalVariablesSet.count(varName)) {
+              if (lid > 0)
+                cu->readPhaseLineNumbers.insert(lid);
+            }
+          }
+        }
+      }
+    }
+    if (cu->instructionsLineNumbers.empty()) {
+      cu->removeCU();
+      cu->startLine = -1;
+      cu->endLine = -1;
+    } else {
+      cu->startLine = *(cu->instructionsLineNumbers.begin());
+      cu->endLine = *(cu->instructionsLineNumbers.rbegin());
+    }
+
+    cu->basicBlockName = basicBlockName;
+    CUVector.push_back(cu);
+    suspiciousVariables.clear();
+
+    // check for call instructions in current basic block
+    for (BasicBlock::iterator instruction = (*bb)->begin();
+         instruction != (*bb)->end(); ++instruction) {
+      // Mohammad 6.7.2020: Don't create nodes for library functions (c++/llvm).
+      int32_t lid = getLID(&*instruction, fileID);
+      if (lid > 0) {
+
+        if (isa<CallInst>(instruction)) {
+
+          Function *f = (cast<CallInst>(instruction))->getCalledFunction();
+          // TODO: DO the same for Invoke inst
+
+          // Mohammad 6.7.2020
+          Function::iterator FI = f->begin();
+          bool externalFunction = true;
+          string lid;
+
+          for (Function::iterator FI = f->begin(), FE = f->end(); FI != FE;
+               ++FI) {
+            externalFunction = false;
+            auto tempBI = FI->begin();
+            if (DebugLoc dl = tempBI->getDebugLoc()) {
+              lid = to_string(dl->getLine());
+            } else {
+              if (tempBI->getFunction()->getSubprogram())
+                lid = to_string(
+                    tempBI->getFunction()->getSubprogram()->getLine());
+              else {
+                lid = "LineNotFound";
+              }
+            }
+            break;
+          }
+          if (externalFunction)
+            continue;
+
+          Node *n = new Node;
+          n->type = nodeTypes::dummy;
+          // For ordinary function calls, F has a name.
+          // However, sometimes the function being called
+          // in IR is encapsulated by "bitcast()" due to
+          // the way of compiling and linking. In this way,
+          // getCalledFunction() method returns NULL.
+          // Also, getName() returns NULL if this is an indirect function call.
+          if (f) {
+            n->name = f->getName();
+
+            // @Zia: This for loop appeared after the else part. For some
+            // function calls, the value of f is null. I guess that is why you
+            // have checked if f is not null here. Anyway, I (Mohammad) had to
+            // bring the for loop inside to avoid the segmentation fault. If you
+            // think it is not appropriate, find a solution for it. 14.2.2016
+            for (Function::arg_iterator it = f->arg_begin(); it != f->arg_end();
+                 it++) {
+              string type_str;
+              raw_string_ostream rso(type_str);
+              (it->getType())->print(rso);
+              Variable v(string(it->getName()), rso.str(), lid);
+              n->argumentsList.push_back(v);
+            }
+          } else // get name of the indirect function which is called
+          {
+            Value *v = (cast<CallInst>(instruction))->getCalledValue();
+            Value *sv = v->stripPointerCasts();
+            StringRef fname = sv->getName();
+            n->name = fname;
+          }
+
+          // Recursive functions (Mo 5.11.2019)
+          CallGraphWrapperPass *CGWP = &(getAnalysis<CallGraphWrapperPass>());
+          if (isRecursive(*f, CGWP->getCallGraph())) {
+            int lid = getLID(&*instruction, fileID);
+            n->recursiveFunctionCall =
+                n->name + " " + dputil::decodeLID(lid) + ",";
+          }
+
+          vector<CU *> BBCUsVector = BBIDToCUIDsMap[bb->getName()];
+          // locate the CU where this function call belongs
+          for (auto i : BBCUsVector) {
+            int lid = getLID(&*instruction, fileID);
+            if (lid >= i->startLine && lid <= i->endLine) {
+              i->instructionsLineNumbers.insert(lid);
+              i->childrenNodes.push_back(n);
+
+              i->callLineTofunctionMap[lid].push_back(n);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void DiscoPoP::fillCUVariables(Region *TopRegion,
+                                   set<string> &globalVariablesSet,
+                                   vector<CU *> &CUVector,
+                                   map<string, vector<CU *>> &BBIDToCUIDsMap) {
+  int lid;
+  string varName, varType, varDefLine;
+  // Changed TerminatorInst to Instuction
+  const Instruction *TInst;
+  string successorBB;
+
+  for (Region::block_iterator bb = TopRegion->block_begin();
+       bb != TopRegion->block_end(); ++bb) {
+    CU *lastCU = BBIDToCUIDsMap[bb->getName()]
+                     .back(); // get the last CU in the basic block
+    // get all successor basic blocks for bb
+    TInst = bb->getTerminator();
+    for (unsigned i = 0, nSucc = TInst->getNumSuccessors(); i < nSucc; ++i) {
+      // get the name of successor basicBlock
+      successorBB = TInst->getSuccessor(i)->getName();
+      // get the first CU of the successor basicBlock and record its ID in
+      // current CU's successorCUs
+      lastCU->successorCUs.push_back(BBIDToCUIDsMap[successorBB].front()->ID);
+    }
+
+    auto bbCU = BBIDToCUIDsMap[bb->getName()].begin();
+    for (BasicBlock::iterator instruction = (*bb)->begin();
+         instruction != (*bb)->end(); ++instruction) {
+      if (isa<LoadInst>(instruction) || isa<StoreInst>(instruction)) {
+        // NOTE: changed 'instruction' to '&*instruction'
+        lid = getLID(&*instruction, fileID);
+        if (lid == 0)
+          continue;
+        // varName = refineVarName(determineVariableName(instruction));
+        // NOTE: changed 'instruction' to '&*instruction', next 2 lines
+        varName = determineVariableName(&*instruction);
+        varType = determineVariableType(&*instruction);
+        varDefLine = determineVariableDefLine(&*instruction);
+
+        Variable v(varName, varType, varDefLine);
+
+        std::string prefix("ARRAY");
+        if (!varType.compare(0, prefix.size(), prefix)) {
+          varName = "ARRAY, " + varName;
+        }
+
+        // errs() << "Name: "  << varName << " " << "Type: " << varType << "\n";
+
+        if (lid > (*bbCU)->endLine) {
+          bbCU = next(bbCU, 1);
+        }
+        if (globalVariablesSet.count(varName) ||
+            programGlobalVariablesSet.count(varName)) {
+          (*bbCU)->globalVariableNames.insert(v);
+          // originalVariablesSet.insert(varName);
+        } else {
+          (*bbCU)->localVariableNames.insert(v);
+          // originalVariablesSet.insert(varName);
+        }
+      }
+    }
+  }
+}
+
+void DiscoPoP::findStartEndLineNumbers(Node *root, int &start, int &end) {
+  if (root->type == nodeTypes::cu) {
+    if (start == -1 || start > root->startLine) {
+      start = root->startLine;
+    }
+
+    if (end < root->endLine) {
+      end = root->endLine;
+    }
+  }
+
+  for (auto i : root->childrenNodes) {
+    findStartEndLineNumbers(i, start, end);
+  }
+}
+
+void DiscoPoP::fillStartEndLineNumbers(Node *root, LoopInfo &LI) {
+  if (root->type != nodeTypes::cu) {
+    int start = -1, end = -1;
+
+    if (root->type == nodeTypes::loop) {
+      for (auto i : root->childrenNodes) {
+        if (i->type == nodeTypes::cu) {
+          Loop *loop = LI.getLoopFor(i->BB);
+          DebugLoc dl = loop->getStartLoc();
+          int32_t lid = 0;
+          lid = (fileID << LIDSIZE) + dl->getLine();
+          loopStartLines[root->ID] = dputil::decodeLID(lid);
+          break;
+        }
+      }
+    }
+    findStartEndLineNumbers(root, start, end);
+
+    root->startLine = start;
+    root->endLine = end;
+  }
+
+  for (auto i : root->childrenNodes) {
+    fillStartEndLineNumbers(i, LI);
+  }
+}
+
+void DiscoPoP::initializeCUIDCounter() {
+  std::string CUCounterFile = "DP_CUIDCounter.txt";
+
+  if (dputil::fexists(CUCounterFile)) {
+    std::fstream inCUIDCounter(CUCounterFile, std::ios_base::in);
+    ;
+    inCUIDCounter >> CUIDCounter;
+    inCUIDCounter.close();
+  }
+}
+
+bool DiscoPoP::isRecursive(Function &F, CallGraph &CG) {
+  auto callNode = CG[&F];
+  for (unsigned i = 0; i < callNode->size(); i++) {
+    if ((*callNode)[i]->getFunction() == &F)
+      return true;
+  }
+
+  return false;
+}
+
+// CUGeneration end
 
 //Helper functions
 bool DiscoPoP::isaCallOrInvoke(Instruction *BI)
@@ -437,7 +1062,7 @@ bool DiscoPoP::runOnFunction(Function &F)
 
     StringRef funcName = F.getName();
     // Avoid functions we don't want to instrument
-    if (funcName.find("llvm.dbg") != string::npos)    // llvm debug calls
+    if (funcName.find("llvm.") != string::npos)    // llvm debug calls
     {
         return false;
     }
@@ -462,11 +1087,80 @@ bool DiscoPoP::runOnFunction(Function &F)
         return false;
     }
 
+    vector<CU *> CUVector;
+  set<string> globalVariablesSet; // list of variables which appear in more than
+                                  // one basic block
+  map<string, vector<CU *>> BBIDToCUIDsMap;
+
     determineFileID(F, fileID);
     
     // only instrument functions belonging to project source files
     if (!fileID)
         return false;
+
+    // CUGeneration
+
+      /********************* Initialize root values ***************************/
+  Node *root = new Node;
+  root->name = F.getName();
+  root->type = nodeTypes::func;
+
+  // Get list of arguments for this function and store them in root.
+  // NOTE: changed the way we get the arguments
+  // for (Function::ArgumentListType::iterator it = F.getArgumentList().begin();
+  // it != F.getArgumentList().end(); it++) {
+
+  BasicBlock *BB = &F.getEntryBlock();
+  auto BI = BB->begin();
+  string lid;
+  if (DebugLoc dl = BI->getDebugLoc()) {
+    lid = to_string(dl->getLine());
+  } else {
+    lid = to_string(BI->getFunction()->getSubprogram()->getLine());
+  }
+
+  for (Function::arg_iterator it = F.arg_begin(); it != F.arg_end(); it++) {
+
+    string type_str;
+    raw_string_ostream rso(type_str);
+    (it->getType())->print(rso);
+
+    Variable v(it->getName(), rso.str(), to_string(fileID) + ":" + lid);
+    root->argumentsList.push_back(v);
+  }
+  /********************* End of initialize root values
+   * ***************************/
+  // errs()<< "000---\n";
+  // NOTE: changed the pass name for loopinfo -- LoopInfo &LI =
+  // getAnalysis<LoopInfo>();
+  LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+
+  // get the top level region
+  RIpass = &getAnalysis<RegionInfoPass>();
+  RI = &(RIpass->getRegionInfo());
+  Region *TopRegion = RI->getTopLevelRegion();
+
+  getFunctionReturnLines(TopRegion, root);
+
+  populateGlobalVariablesSet(TopRegion, globalVariablesSet);
+
+  createCUs(TopRegion, globalVariablesSet, CUVector, BBIDToCUIDsMap, root, LI);
+
+  fillCUVariables(TopRegion, globalVariablesSet, CUVector, BBIDToCUIDsMap);
+
+  fillStartEndLineNumbers(root, LI);
+
+  secureStream();
+
+  // printOriginalVariables(originalVariablesSet);
+
+  printData(root);
+
+  for (auto i : CUVector) {
+    delete (i);
+  }
+
+    // CUGeneration end
 
     // Check loop parallelism?
     if (ClCheckLoopPar)
@@ -693,6 +1387,217 @@ void DiscoPoP::processStructTypes(string const &fullStructName, MDNode *structNo
         }
     }
 }
+
+
+/********** Output functions *********/
+string DiscoPoP::xmlEscape(string data) {
+  string::size_type pos = 0;
+  for (;;) {
+    pos = data.find_first_of("\"&<>", pos);
+    if (pos == string::npos)
+      break;
+    string replacement;
+    switch (data[pos]) {
+    case '\"':
+      replacement = "&quot;";
+      break;
+    case '&':
+      replacement = "&amp;";
+      break;
+    case '<':
+      replacement = "&lt;";
+      break;
+    case '>':
+      replacement = "&gt;";
+      break;
+    default:;
+    }
+    data.replace(pos, 1, replacement);
+    pos += replacement.size();
+  };
+  return data;
+}
+
+void DiscoPoP::secureStream() {
+  outOriginalVariables = new std::ofstream();
+  outOriginalVariables->open("OriginalVariables.txt", std::ios_base::app);
+
+  outCUs = new std::ofstream();
+  outCUs->open("Data.xml", std::ios_base::app);
+
+  outCUIDCounter = new std::ofstream();
+  outCUIDCounter->open("DP_CUIDCounter.txt", std::ios_base::out);
+}
+
+string DiscoPoP::getLineNumbersString(set<int> LineNumbers) {
+  string line = "";
+  for (auto li : LineNumbers) {
+    std::string temp = ',' + dputil::decodeLID(li);
+    if (temp != ",*") {
+      if (line == "") {
+        line = dputil::decodeLID(li);
+      } else {
+        line = line + temp;
+      }
+    }
+  }
+  return line;
+}
+
+string DiscoPoP::getChildrenNodesString(Node *root) {
+  string childrenIDs = "";
+  int i = 0;
+  std::for_each(root->childrenNodes.begin(), root->childrenNodes.end(),
+                [&](Node *node) {
+                  if (i == 0) {
+                    childrenIDs = node->ID;
+                    i++;
+                  } else {
+                    childrenIDs += "," + node->ID;
+                  }
+                });
+  return childrenIDs;
+}
+
+
+void DiscoPoP::printData(Node *root) {
+  *outCUs << "<Nodes>" << endl << endl;
+
+  printTree(root, true);
+
+  *outCUs << "</Nodes>" << endl << endl << endl;
+
+  closeOutputFiles();
+}
+
+void DiscoPoP::printTree(Node *root, bool isRoot) {
+  printNode(root, isRoot);
+
+  std::for_each(root->childrenNodes.begin(), root->childrenNodes.end(),
+                [&](Node *node) {
+                  if (node->type == nodeTypes::func)
+                    isRoot = false;
+                  printTree(node, isRoot);
+                });
+}
+
+void DiscoPoP::printNode(Node *root, bool isRoot) {
+  if (root->name.find("llvm")) {
+    // if(dputil::decodeLID(root->endLine) == "1:560")
+    // errs() << "=-=-=-=-=-=-=-=-=-=-=-=- " <<
+    // dputil::decodeLID(root->startLine) << "\n";
+    string start = "";
+    if (root->type == nodeTypes::loop) {
+      start = loopStartLines[root->ID];
+    } else {
+      start = dputil::decodeLID(root->startLine);
+    }
+    *outCUs << "\t<Node"
+            << " id=\"" << xmlEscape(root->ID) << "\""
+            << " type=\"" << root->type << "\""
+            << " name=\"" << xmlEscape(root->name) << "\""
+            << " startsAtLine = \"" << start << "\""
+            << " endsAtLine = \"" << dputil::decodeLID(root->endLine) << "\""
+            << ">" << endl;
+    *outCUs << "\t\t<childrenNodes>" << getChildrenNodesString(root)
+            << "</childrenNodes>" << endl;
+    if (root->type == nodeTypes::func || root->type == nodeTypes::dummy) {
+      *outCUs << "\t\t<funcArguments>" << endl;
+      for (auto ai : root->argumentsList) {
+        *outCUs << "\t\t\t<arg type=\"" << xmlEscape(ai.type) << "\""
+                << " defLine=\"" << xmlEscape(ai.defLine) << "\">"
+                << xmlEscape(ai.name) << "</arg>" << endl;
+      }
+      *outCUs << "\t\t</funcArguments>" << endl;
+
+      string rlVals = "";
+      for (auto rl : root->returnLines) {
+        rlVals += dputil::decodeLID(rl) + ", ";
+      }
+      *outCUs << "\t\t<funcReturnLines>" << rlVals << "</funcReturnLines>"
+              << endl;
+    }
+
+    if (root->type == nodeTypes::cu) {
+      CU *cu = static_cast<CU *>(root);
+      *outCUs << "\t\t<BasicBlockID>" << cu->BBID << "</BasicBlockID>" << endl;
+      *outCUs << "\t\t<readDataSize>" << cu->readDataSize << "</readDataSize>"
+              << endl;
+      *outCUs << "\t\t<writeDataSize>" << cu->writeDataSize
+              << "</writeDataSize>" << endl;
+
+      *outCUs << "\t\t<instructionsCount>" << cu->instructionsCount
+              << "</instructionsCount>" << endl;
+      *outCUs << "\t\t<instructionLines count=\""
+              << (cu->instructionsLineNumbers).size() << "\">"
+              << getLineNumbersString(cu->instructionsLineNumbers)
+              << "</instructionLines>" << endl;
+      *outCUs << "\t\t<readPhaseLines count=\""
+              << (cu->readPhaseLineNumbers).size() << "\">"
+              << getLineNumbersString(cu->readPhaseLineNumbers)
+              << "</readPhaseLines>" << endl;
+      *outCUs << "\t\t<writePhaseLines count=\""
+              << (cu->writePhaseLineNumbers).size() << "\">"
+              << getLineNumbersString(cu->writePhaseLineNumbers)
+              << "</writePhaseLines>" << endl;
+      *outCUs << "\t\t<returnInstructions count=\""
+              << (cu->returnInstructions).size() << "\">"
+              << getLineNumbersString(cu->returnInstructions)
+              << "</returnInstructions>" << endl;
+      *outCUs << "\t\t<successors>" << endl;
+      for (auto sucCUi : cu->successorCUs) {
+        *outCUs << "\t\t\t<CU>" << sucCUi << "</CU>" << endl;
+      }
+      *outCUs << "\t\t</successors>" << endl;
+
+      *outCUs << "\t\t<localVariables>" << endl;
+      for (auto lvi : cu->localVariableNames) {
+        *outCUs << "\t\t\t<local type=\"" << xmlEscape(lvi.type) << "\""
+                << " defLine=\"" << xmlEscape(lvi.defLine) << "\">"
+                << xmlEscape(lvi.name) << "</local>" << endl;
+      }
+      *outCUs << "\t\t</localVariables>" << endl;
+
+      *outCUs << "\t\t<globalVariables>" << endl;
+      for (auto gvi : cu->globalVariableNames) {
+        *outCUs << "\t\t\t<global type=\"" << xmlEscape(gvi.type) << "\""
+                << " defLine=\"" << xmlEscape(gvi.defLine) << "\">"
+                << xmlEscape(gvi.name) << "</global>" << endl;
+      }
+      *outCUs << "\t\t</globalVariables>" << endl;
+
+      *outCUs << "\t\t<callsNode>" << endl;
+      for (auto i : (cu->callLineTofunctionMap)) {
+        for (auto ii : i.second) {
+          *outCUs << "\t\t\t<nodeCalled atLine=\"" << dputil::decodeLID(i.first)
+                  << "\">" << ii->ID << "</nodeCalled>" << endl;
+          // specifica for recursive fucntions inside loops. (Mo 5.11.2019)
+          *outCUs << "\t\t\t\t<recursiveFunctionCall>"
+                  << ii->recursiveFunctionCall << "</recursiveFunctionCall>"
+                  << endl;
+        }
+      }
+      *outCUs << "\t\t</callsNode>" << endl;
+    }
+
+    *outCUs << "\t</Node>" << endl << endl;
+  }
+}
+
+void DiscoPoP::closeOutputFiles() {
+
+  if (outCUs != NULL && outCUs->is_open()) {
+    outCUs->flush();
+    outCUs->close();
+  }
+
+  if (outOriginalVariables != NULL && outOriginalVariables->is_open()) {
+    outOriginalVariables->flush();
+    outOriginalVariables->close();
+  }
+  // delete outCUs;
+}
+/************** End of output functions *******************/
 
 /* metadata format in LLVM IR:
 !5 = metadata !{
