@@ -1,8 +1,8 @@
 #include "InstructionCFG.h"
 
 InstructionCFG::InstructionCFG(dputil::VariableNameFinder *_VNF, Function &F): VNF(_VNF){
-	entry = Graph::addNode((Instruction*)ENTRY);
-	exit = Graph::addNode((Instruction*)EXIT);
+	entry = Graph::addInstructionNode((Instruction*)ENTRY);
+	exit = Graph::addInstructionNode((Instruction*)EXIT);
 	Instruction *previousInstruction;
 	for (BasicBlock &BB : F){
 		// Add current block's store/load/call-instructions and declarations to graph
@@ -20,12 +20,12 @@ InstructionCFG::InstructionCFG(dputil::VariableNameFinder *_VNF, Function &F): V
 	}
 	
 	// Conect entry/exit nodes
-	for(auto node : Graph::getNodes()){
-		if(node != entry && node != exit){
-			if(Graph::getInEdges(node).empty()){
-				Graph::addEdge(entry, node);
-			}else if(Graph::getOutEdges(node).empty()){
-				Graph::addEdge(node, exit);
+	for(auto instNode : Graph::getInstructionNodes()){
+		if(instNode != entry && instNode != exit){
+			if(Graph::getInEdges(instNode).empty()){
+				Graph::addEdge(entry, instNode);
+			}else if(Graph::getOutEdges(instNode).empty()){
+				Graph::addEdge(instNode, exit);
 			}
 		}
 	}
@@ -44,7 +44,7 @@ void InstructionCFG::findAndAddFirstRelevantInstructionInSuccessorBlocks(BasicBl
 				Graph::addEdge(previousInstruction, &I);
 				goto next;
 			}else if(isa<ReturnInst>(&I)){
-				Graph::addEdge(Graph::getNode(previousInstruction), exit);
+				Graph::addEdge(Graph::getInstructionNode(previousInstruction), exit);
 			}
 		}
 		if(S != BB) findAndAddFirstRelevantInstructionInSuccessorBlocks(S, previousInstruction);
@@ -56,8 +56,8 @@ set<Instruction*> InstructionCFG::findBoundaryInstructions(uint startLine, uint 
 	
 }
 
-void InstructionCFG::highlightNode(Instruction *instr){
-	highlightedNodes.insert(instr);
+void InstructionCFG::highlightInstructionNode(Instruction *instr){
+	highlightedInstructionNodes.insert(instr);
 }
 
 void InstructionCFG::dumpToDot(const std::string targetPath)
@@ -67,19 +67,19 @@ void InstructionCFG::dumpToDot(const std::string targetPath)
 	dotStream.open(targetPath);
 	dotStream << "digraph{";
 	// Create all nodes in DOT format
-	for (auto node : getNodes())
+	for (auto instNode : getInstructionNodes())
 	{
 		string label;
 		DebugLoc dl;
 		Instruction* instr;
-		if(node == entry){
-			label = "label=ENTRY"; goto printNode;
+		if(instNode == entry){
+			label = "label=ENTRY"; goto printInstructionNode;
 		}
-		if(node == exit){
-			label = "label=EXIT"; goto printNode;
+		if(instNode == exit){
+			label = "label=EXIT"; goto printInstructionNode;
 		}
-		label = "label=\"" + to_string(Graph::getNodeIndex(node)) + "\\n";
-		instr = node->getItem();
+		label = "label=\"" + to_string(Graph::getInstructionNodeIndex(instNode)) + "\\n";
+		instr = instNode->getItem();
 		dl = instr->getDebugLoc();
 		if(isa<StoreInst>(instr) || isa<LoadInst>(instr)){
 			if(isa<StoreInst>(instr)){
@@ -100,7 +100,7 @@ void InstructionCFG::dumpToDot(const std::string targetPath)
 				label += to_string(instr->getFunction()->getSubprogram()->getLine());
 			}
 			label += "\"";
-			if(highlightedNodes.find(instr) != highlightedNodes.end()){
+			if(highlightedInstructionNodes.find(instr) != highlightedInstructionNodes.end()){
 				label += "\",fillcolor=cyan,style=filled";
 			}
 		} else if(isa<AllocaInst>(instr)){
@@ -108,8 +108,8 @@ void InstructionCFG::dumpToDot(const std::string targetPath)
 			label += "\",shape=rectangle,fillcolor=wheat,style=filled";
 		} else label += "?\"";
 
-		printNode:
-		dotStream << "\t\"" << getNodeIndex(node) 
+		printInstructionNode:
+		dotStream << "\t\"" << getInstructionNodeIndex(instNode) 
 			<< "\" [" << label << "];\n"
 		;
 
@@ -119,8 +119,8 @@ void InstructionCFG::dumpToDot(const std::string targetPath)
 	// Now print all outgoing edges and their labels
 	for (auto e : getEdges())
 	{
-		dotStream << "\t\"" << getNodeIndex(e->getSrc()) 
-			<< "\" -> \"" << getNodeIndex(e->getDst()) 
+		dotStream << "\t\"" << getInstructionNodeIndex(e->getSrc()) 
+			<< "\" -> \"" << getInstructionNodeIndex(e->getDst()) 
 			<< "\";\n"
 		;
 	}
