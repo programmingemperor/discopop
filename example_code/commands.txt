@@ -1,0 +1,3 @@
+runtime library path
+
+-L /home/simonschmalfuss/.rustup/toolchains/1.30.0-x86_64-unknown-linux-gnu/lib/ -lstd-d4cefb87c2fd1187 

@@ -320,7 +320,7 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
         if (L != NULL && LI.isLoopHeader(tmpBB))
         {
             StringRef loopType = tmpBB->getName().split('.').first;
-            if (DP_DEBUG)
+            if (1)
             {
                 errs() << "loop [" << loopType << "] header: " << tmpBB->getName() << "\n";
             }
@@ -329,6 +329,7 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
             if (L->hasDedicatedExits())
             {
                 // loop exits are in canonical form
+                cout << "it has dedicated exists\n"; 
                 L->getUniqueExitBlocks(ExitBlocks);
             }
             else
@@ -343,6 +344,8 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
                 continue;
             }
 
+            cout << "number of exit blocks\n"; 
+            cout << ExitBlocks.size();
             // When loop has break statement inside, exit blocks may contain
             // the if-else block containing the break. Since we always want
             // to find the real exit (.end) block, we need to check the
@@ -354,11 +357,31 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
             }
             for (SmallVectorImpl<BasicBlock *>::iterator EI = ExitBlocks.begin(), END = ExitBlocks.end();
                     EI != END; ++EI)
-            {
+            { 
+                cout << "found new exit block\n"; 
+
                 StringRef exitType = (*EI)->getName().split('.').first;
-                if (exitType.equals(loopType) && ((*EI)->getName().find("end") != string::npos) &&
+                cout << (*EI)->getName().data(); 
+                if((*EI)->getName().find("bb5")) {
+                cout << "pushing real exit block\n";     
+                RealExitBlocks.push_back(*EI);
+                } else  {
+                    cout << "what the fuck?\n"; 
+                    errs() << (*EI)->getName().data(); 
+                }
+                // basically: check if current basic block is loop header or even in loop, then find all 
+                // exit blocks of this loop. then find all read exit blocks
+                // -> this might not work because BB->getName find "end" will never
+                // be true for swift front end generated llvm ir because the labels are just numbers
+                // thus real exit blocks size is zero and loop exit blocks appear to be not well formed
+                // potentially need to find other way to find real loop exit
+            /*
+                if (exitType.equals(loopType) || ((*EI)->getName().find("end") != string::npos) || ((*EI)->getName().data() == "bb5") &&
                         (std::find(RealExitBlocks.begin(), RealExitBlocks.end(), *EI) == RealExitBlocks.end()))
-                {
+                {   
+                    cout << "pushing real exit block\n"; 
+                    errs() << (*EI)->getName().data(); 
+                    cout << "\n";
                     RealExitBlocks.push_back(*EI);
                     if (DP_DEBUG)
                     {
@@ -368,6 +391,7 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
                 else
                 {
 		    // Changed TerminatorInst to Instruction
+            // could insert debug log here to see if assumption is true
                     Instruction *TI = (*EI)->getTerminator();
                     assert(TI != NULL && "Exit block is not well formed!");
                     unsigned int numSucc = TI->getNumSuccessors();
@@ -385,7 +409,7 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
                             }
                         }
                     }
-                }
+                }*/
             }
             if (DP_DEBUG)
             {
@@ -435,8 +459,14 @@ bool DiscoPoP::runOnFunction(Function &F)
         errs() << "pass DiscoPoP: run pass on function\n";
     }
 
+    //cout << "debug call\n";
+    //cout << F.getName().data();
+    
+    
+
     StringRef funcName = F.getName();
     // Avoid functions we don't want to instrument
+    
     if (funcName.find("llvm.dbg") != string::npos)    // llvm debug calls
     {
         return false;
@@ -461,12 +491,38 @@ bool DiscoPoP::runOnFunction(Function &F)
     {
         return false;
     }
+    if (funcName.find("pthread_") != string::npos)
+    {
+        return false;
+    }
+    if (funcName.find("pthread_") != string::npos)
+    {
+        return false;
+    }
+    if (funcName.find("pthread_") != string::npos)
+    {
+        return false;
+    }
+    // not sure why rust defines all these functions in executable but we have to ignore them
+    // because they have invalid lids
+    cout << "printing func name here \n"; 
+    cout << funcName.data(); 
+    if(funcName.find("_ZN4test4main17hcf302dac3ad452a9E") == string::npos) {
+        return false; 
+    }
+
+    // obviously needs to be more generic
+    cout << "made it past function check \n"; 
 
     determineFileID(F, fileID);
     
     // only instrument functions belonging to project source files
     if (!fileID)
         return false;
+
+    cout << "file id"; 
+
+    cout << fileID;   
 
     // Check loop parallelism?
     if (ClCheckLoopPar)
@@ -479,6 +535,7 @@ bool DiscoPoP::runOnFunction(Function &F)
     // Each function entry is instrumented, and the first
     // executed function will initialize shadow memory.
     // See the definition of __dp_func_entry() for detail.
+
     instrumentFuncEntry(F);
 
     // Traverse all instructions, collect loads/stores/returns, check for calls.
@@ -585,7 +642,9 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
     {
         return getOrInsertVarName("*", builder);
     }
-
+    cout << "printing operand name \n"; 
+    cout << operand->getName().data(); 
+    cout << "\n"; 
     if (operand->hasName())
     {
         // we've found a global variable
@@ -635,6 +694,33 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
             return determineVarName((Instruction *)gep);
         }
         return getOrInsertVarName(string(operand->getName().data()), builder);
+    }
+    // handling rust array/struct
+    if(isa<GetElementPtrInst>(*operand)) {
+        cout << "handling of rust array \n"; 
+        errs() << *operand;
+        cout << "\n";
+        GetElementPtrInst *gep = cast<GetElementPtrInst>(operand);
+        Value *ptrOperand = gep->getPointerOperand();
+        PointerType *PTy = cast<PointerType>(ptrOperand->getType());
+        cout << "determining type of pointer operand \n";
+        errs() << *ptrOperand; 
+        cout << "\n"; 
+        errs() << *PTy; 
+        cout << "\n"; 
+   
+
+        if (PTy->getElementType()->getTypeID() == Type::ArrayTyID) {
+                cout << "is of type array with name: \n"; 
+                cout << string(ptrOperand->getName().data()); 
+                cout << "\n";
+                
+
+                return getOrInsertVarName(string(ptrOperand->getName().data()), builder);
+            } else {
+                cout << "is not o type array?\n";
+            }
+        
     }
 
     if (isa<LoadInst>(*operand) || isa<StoreInst>(*operand))
@@ -902,7 +988,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
             assert(parent != NULL);
             StringRef fn = parent->getName();
 
-            if (fn.equals("main"))     // returning from main
+            if (fn.equals("_ZN4test4main17hcf302dac3ad452a9E"))     // returning from main
             {
                 insertDpFinalize(&*BI);
             }
@@ -944,7 +1030,7 @@ void DiscoPoP::instrumentLoad(LoadInst *toInstrument)
 
     //cout << "Creating Load " << uniqueNum;
     Twine name = Twine("L").concat(Twine(uniqueNum));
-
+ 
     GlobalVariable *addrTracker =
         new GlobalVariable(*this->ThisModule,
                            Int64,//trackerType
@@ -1067,12 +1153,16 @@ void DiscoPoP::insertDpFinalize(Instruction *before)
 
 void DiscoPoP::instrumentFuncEntry(Function &F)
 {
+
     BasicBlock &entryBB = F.getEntryBlock();
     int32_t lid = 0;
     int32_t isStart = 0;
 
     StringRef fn = F.getName();
-    if (fn.equals("main"))
+    cout << "instrumenting entry point of:"; 
+    cout << fn.data();
+    // must change as well for rust because main is not called that
+    if (fn.equals("_ZN4test4main17hcf302dac3ad452a9E"))
         isStart = 1;
 
     // We always want to insert __dp_func_entry at the beginning
@@ -1081,6 +1171,8 @@ void DiscoPoP::instrumentFuncEntry(Function &F)
     for (BasicBlock::iterator BI = entryBB.begin(), EI = entryBB.end(); BI != EI; ++BI)
     {
         lid = getLID(&*BI, fileID);
+        cout << "lid is:"; 
+        cout << lid;
         if (lid > 0 && !isa<PHINode>(BI))
         {
             IRBuilder<> IRB(&*entryBB.begin());
@@ -1148,3 +1240,4 @@ void DiscoPoP::instrumentLoopExit(BasicBlock *bb, int32_t id)
     }
     //assert((lid > 0) && "Loop exit is not instrumented because LID are all invalid for the whole basic block.");
 }
+
