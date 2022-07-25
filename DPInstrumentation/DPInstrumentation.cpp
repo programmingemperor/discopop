@@ -366,7 +366,6 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
                 cout << "pushing real exit block\n";     
                 RealExitBlocks.push_back(*EI);
                 } else  {
-                    cout << "what the fuck?\n"; 
                     errs() << (*EI)->getName().data(); 
                 }
                 // basically: check if current basic block is loop header or even in loop, then find all 
@@ -507,7 +506,7 @@ bool DiscoPoP::runOnFunction(Function &F)
     // because they have invalid lids
     cout << "printing func name here \n"; 
     cout << funcName.data(); 
-    if(funcName.find("_ZN4test4main17hcf302dac3ad452a9E") == string::npos) {
+    if(funcName.find("_ZN9reduction4main17h7e25980b9ee16ef8E") == string::npos) {
         return false; 
     }
 
@@ -988,7 +987,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
             assert(parent != NULL);
             StringRef fn = parent->getName();
 
-            if (fn.equals("_ZN4test4main17hcf302dac3ad452a9E"))     // returning from main
+            if (fn.equals("_ZN9reduction4main17h7e25980b9ee16ef8E"))     // returning from main
             {
                 insertDpFinalize(&*BI);
             }
@@ -1162,7 +1161,7 @@ void DiscoPoP::instrumentFuncEntry(Function &F)
     cout << "instrumenting entry point of:"; 
     cout << fn.data();
     // must change as well for rust because main is not called that
-    if (fn.equals("_ZN4test4main17hcf302dac3ad452a9E"))
+    if (fn.equals("_ZN9reduction4main17h7e25980b9ee16ef8E"))
         isStart = 1;
 
     // We always want to insert __dp_func_entry at the beginning

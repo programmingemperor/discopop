@@ -1,16 +1,18 @@
-pub fn main() {
-    let mut a:i32;
-    a = 0;
+int main() {
+    int a; 
+    a = 0; 
     a = 1; 
-    let mut c:i32; 
+    int c; 
     c = a; 
-    let mut b:i32; 
+    int b; 
     b = a; 
-    let mut arr: [i32; 5] = [1, 2, 3, 4, 5]; 
-    for i in 0..arr.len() {
-        arr[i] = 0; 
-        a = a + arr[i];
-    
+    int arr[5] = {1, 2, 3, 4, 5};
+
+    for(int i = 0; i<5; i++) {
+      c = c + 1;   
+       
     }
     a = 1; 
 }
+
+

@@ -17,6 +17,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/IR/CallingConv.h>
@@ -107,7 +108,10 @@ bool is_operand(llvm::Instruction* instr, llvm::Value* operand) {
   return false;
 }
 
-char get_char_for_opcode(unsigned opcode) {
+char get_char_for_opcode(llvm::Instruction *cur_instr) {
+
+  unsigned opcode = cur_instr->getOpcode();
+  
   if (opcode == llvm::Instruction::Add || opcode == llvm::Instruction::FAdd)
     return '+';
   if (opcode == llvm::Instruction::Sub || opcode == llvm::Instruction::FSub)
@@ -117,6 +121,32 @@ char get_char_for_opcode(unsigned opcode) {
   if (opcode == llvm::Instruction::And) return '&';
   if (opcode == llvm::Instruction::Or) return '|';
   if (opcode == llvm::Instruction::Xor) return '^';
+
+  if(opcode == llvm::Instruction::ExtractValue) {
+    std::cout << "is extractvalue instruction\n";
+    cur_instr = llvm::cast<llvm::Instruction>(cur_instr->getOperand(0));
+    opcode = cur_instr->getOpcode();
+
+    llvm::errs() << *cur_instr << "\n"; 
+
+    if(opcode == llvm::Instruction::Call) {
+
+     
+      llvm::StringRef function_name = llvm::cast<llvm::CallInst>(cur_instr)->getCalledFunction()->getName();
+      llvm:: errs() << function_name << "\n";
+      std::cout << function_name.data() << "outing data here name\n";
+
+      if(function_name.find("add") != std::string::npos) {
+        return '+'; 
+      } 
+      if(function_name.find("sub") != std::string::npos) {
+        return '-';
+      }
+      if(function_name.find("mul") != std::string::npos) {
+        return '*'; 
+      }
+    }
+  }
   return ' ';
 }
 
@@ -140,6 +170,7 @@ llvm::Instruction* get_prev_use(llvm::Instruction* instr, llvm::Value* val) {
   }
   return llvm::dyn_cast<llvm::Instruction>(val);
 }
+
 
 llvm::Value* get_var_rec(llvm::Value* val) {
   if (!val) return nullptr;

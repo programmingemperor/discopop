@@ -415,6 +415,33 @@ string CUGeneration::determineVariableName(Instruction *I, bool &isGlobalVariabl
         //return getOrInsertVarName(string(operand->getName().data()), builder);
     }
 
+    // handling rust array/struct
+    if(isa<GetElementPtrInst>(*operand)) {
+        cout << "handling of rust array \n"; 
+        errs() << *operand;
+        cout << "\n";
+        GetElementPtrInst *gep = cast<GetElementPtrInst>(operand);
+        Value *ptrOperand = gep->getPointerOperand();
+        PointerType *PTy = cast<PointerType>(ptrOperand->getType());
+        cout << "determining type of pointer operand \n";
+        errs() << *ptrOperand; 
+        cout << "\n"; 
+        errs() << *PTy; 
+        cout << "\n"; 
+   
+
+        if (PTy->getElementType()->getTypeID() == Type::ArrayTyID) {
+                cout << "is of type array with name: \n"; 
+                cout << string(ptrOperand->getName().data()); 
+                cout << "\n";
+                
+
+                return getOrInsertVarName(string(ptrOperand->getName().data()), builder);
+            } else {
+                cout << "is not o type array?\n";
+            }
+    }
+    
     if (isa<LoadInst>(*operand) || isa<StoreInst>(*operand))
     {
         return determineVariableName((Instruction *)(operand), isGlobalVariable);
@@ -1270,6 +1297,13 @@ bool CUGeneration::runOnFunction(Function &F)
     {
         return false;
     }
+    if(funcName.find("_ZN9reduction4main17h7e25980b9ee16ef8E") == string::npos) {
+        return false; 
+    } 
+    // obviously needs to be more generic
+    cout << "made it past function check \n"; 
+    
+    cout << "running on function" << funcName.data() << "\n";
 
     //initializeCUIDCounter();
     vector<CU *> CUVector;
@@ -1277,6 +1311,7 @@ bool CUGeneration::runOnFunction(Function &F)
     map<string, vector<CU *>> BBIDToCUIDsMap;
 
     determineFileID(F, fileID);
+    cout << "past file id check \n";
     /********************* Initialize root values ***************************/
     Node *root = new Node;
     root->name = F.getName();
@@ -1298,6 +1333,7 @@ bool CUGeneration::runOnFunction(Function &F)
         lid = to_string(BI->getFunction()->getSubprogram()->getLine());
     }
 
+    cout << "get to arg iterator \n"; 
     for (Function::arg_iterator it = F.arg_begin(); it != F.arg_end(); it++)
     {
 
@@ -1308,32 +1344,34 @@ bool CUGeneration::runOnFunction(Function &F)
         Variable v(it->getName(), rso.str(), to_string(fileID) + ":" + lid);
         root->argumentsList.push_back(v);
     }
+    cout << "get to loop wrapper analysis \n";
     /********************* End of initialize root values ***************************/
     // errs()<< "000---\n";
     // NOTE: changed the pass name for loopinfo -- LoopInfo &LI = getAnalysis<LoopInfo>();
     LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 
+    cout << "region info \n";
     //get the top level region
     RIpass = &getAnalysis<RegionInfoPass>();
     RI = &(RIpass->getRegionInfo());
     Region *TopRegion = RI->getTopLevelRegion();
-
+    cout << "return lines \n";
     getFunctionReturnLines(TopRegion, root);
 
     populateGlobalVariablesSet(TopRegion, globalVariablesSet);
-
+    cout << "cu creation \n";
     createCUs(TopRegion, globalVariablesSet, CUVector, BBIDToCUIDsMap, root, LI);
 
     fillCUVariables(TopRegion, globalVariablesSet, CUVector, BBIDToCUIDsMap);
 
     fillStartEndLineNumbers(root);
-
+    cout << "securing stream \n";
     secureStream();
 
     printOriginalVariables(originalVariablesSet);
 
     printData(root);
-
+    cout << " freeing memory \n";
     for (auto i : CUVector)
     {
         delete (i);
