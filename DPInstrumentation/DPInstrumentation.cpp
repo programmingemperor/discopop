@@ -362,6 +362,7 @@ void DiscoPoP::CFA(Function &F, LoopInfo &LI)
 
                 StringRef exitType = (*EI)->getName().split('.').first;
                 cout << (*EI)->getName().data(); 
+                // todo: fix this issue of finding real exit blocks without relying on labels
                 if((*EI)->getName().find("bb5")) {
                 cout << "pushing real exit block\n";     
                 RealExitBlocks.push_back(*EI);
@@ -506,7 +507,7 @@ bool DiscoPoP::runOnFunction(Function &F)
     // because they have invalid lids
     cout << "printing func name here \n"; 
     cout << funcName.data(); 
-    if(funcName.find("_ZN9reduction4main17h7e25980b9ee16ef8E") == string::npos) {
+    if(funcName.find("_ZN5doall4main17hc80c5399873394c9E") == string::npos) {
         return false; 
     }
 

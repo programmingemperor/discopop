@@ -1,0 +1,29 @@
+CUGeneration: 
+
+- when finding global variables(variables that cross BB boundaries, some cannot be detected. in particular those created by the front end (iterator variables etc) 
+when they are being accessed by either a bitcast or getlelementptr expression) however these do not belong to original program and thus
+it should not impact correctness
+
+- since rust links in the runtime start library these functions need to be ignored as they cause segmentation fault
+due to faulty debug info. thus, some call nodes in the CU graph are erronous because they suggest an internal function
+call when it should be external one
+
+- main entry point needs to be changed after generating IR
+
+- (for c/c++) i think global variables cannot be detected in case of accessing of e.g. a vector because the IR names are different (call1, call2) and the 
+cupass does not check if operand is call instruction to get the name of the vector for example
+
+
+DPReduction:
+
+- finding body of loop must be more dynamic instead of just ignoring header and putting counter in second bb after header
+- array name missing for reduction on array(like openmp) but dependendt on what is even possible with rayon 
+
+
+
+DPInstrumentation: 
+
+- hack solution with finding true exit blocks of loop (static) must be solved without relying on labels
+- recent issue with dependencies not recording even though log shows the reads/writes happen at proper addresses
+
+-> reduction and doall pattern can be identified, todo is map it to rayon

@@ -757,9 +757,12 @@ void CUGeneration::populateGlobalVariablesSet(Region *TopRegion, set<string> &gl
             if (isa<LoadInst>(instruction) || isa<StoreInst>(instruction) || isa<CallInst>(instruction))
             {
 
+                errs() << *instruction << "\n";
                 //string varName = refineVarName(determineVariableName(instruction, isGlobalVariable));
                 // NOTE: changed 'instruction' to '&*instruction'
                 string varName = determineVariableName(&*instruction, isGlobalVariable);
+
+                cout << "varname debug " << varName << "\n";
 
                 if (isGlobalVariable) // add it if it is a global variable in the program
                 {
@@ -767,10 +770,12 @@ void CUGeneration::populateGlobalVariablesSet(Region *TopRegion, set<string> &gl
                 }
 
                 if (variableToBBMap.find(varName) != variableToBBMap.end())
-                {
+                {   
+                    cout << "variable found, checking for bb \n"; 
                     //this var has already once recordded. check for bb id
                     if (variableToBBMap[varName] != *bb)
-                    {
+                    {   
+                        cout << "found in other basic block, determined global to this bb \n";
                         //global variable found. Insert into the globalVariablesSet
                         globalVariablesSet.insert(varName);
                     }
@@ -780,6 +785,7 @@ void CUGeneration::populateGlobalVariablesSet(Region *TopRegion, set<string> &gl
                     //record usage of the variable.
                     variableToBBMap.insert(pair<string, BasicBlock *>(varName, *bb));
                     //errs() << varName << "\n";
+                    cout << "recording usage" << varName << "\n"; 
                 }
             }
         }
@@ -994,6 +1000,7 @@ void CUGeneration::createCUs(Region *TopRegion, set<string> &globalVariablesSet,
         for (BasicBlock::iterator instruction = (*bb)->begin(); instruction != (*bb)->end(); ++instruction)
         {
             //Mohammad 6.7.2020: Don't create nodes for library functions (c++/llvm).
+            //also no nodes for rust library functions 
             int32_t lid = getLID(&*instruction, fileID);
             if (lid > 0)
             {
@@ -1297,7 +1304,7 @@ bool CUGeneration::runOnFunction(Function &F)
     {
         return false;
     }
-    if(funcName.find("_ZN9reduction4main17h7e25980b9ee16ef8E") == string::npos) {
+    if(funcName.find("_ZN5doall4main17hc80c5399873394c9E") == string::npos) {
         return false; 
     } 
     // obviously needs to be more generic
