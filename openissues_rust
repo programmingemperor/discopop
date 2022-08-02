@@ -27,3 +27,13 @@ DPInstrumentation:
 - recent issue with dependencies not recording even though log shows the reads/writes happen at proper addresses
 
 -> reduction and doall pattern can be identified, todo is map it to rayon
+
+
+
+done: 
+
+make finding true exit block from loop more language agnostic
+rust array read/write name retention for cugen and instrumentation
+ignore functions that should not be instrumented bc they belong to runtime
+loop body begin debug
+handling of instrinsic llvm arithmetric instructions in reductionpass
