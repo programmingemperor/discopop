@@ -1,0 +1,11 @@
+ FileID : 1 Loop Line Number : 51 Reduction Line Number : 53 Variable Name : c Operation Name : *
+ FileID : 1 Loop Line Number : 51 Reduction Line Number : 52 Variable Name : a Operation Name : +
+ FileID : 1 Loop Line Number : 43 Reduction Line Number : 45 Variable Name : arrMul Operation Name : +
+ FileID : 1 Loop Line Number : 43 Reduction Line Number : 44 Variable Name : arrSum Operation Name : +
+ FileID : 1 Loop Line Number : 32 Reduction Line Number : 37 Variable Name : localRes Operation Name : +
+ FileID : 1 Loop Line Number : 32 Reduction Line Number : 34 Variable Name : c Operation Name : -
+ FileID : 1 Loop Line Number : 32 Reduction Line Number : 33 Variable Name : b Operation Name : *
+ FileID : 1 Loop Line Number : 32 Reduction Line Number : 36 Variable Name : a Operation Name : +
+ FileID : 1 Loop Line Number : 25 Reduction Line Number : 28 Variable Name : c Operation Name : -
+ FileID : 1 Loop Line Number : 25 Reduction Line Number : 27 Variable Name : b Operation Name : *
+ FileID : 1 Loop Line Number : 25 Reduction Line Number : 26 Variable Name : a Operation Name : +

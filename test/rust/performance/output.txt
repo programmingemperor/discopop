@@ -1,0 +1,1097 @@
+printing func name here 
+_ZN3std2rt10lang_start17h7affe8c14f915b36Eprinting func name here 
+_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17hc4f2e98993f8b97bEprinting func name here 
+_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217h7d2962ee37187ce9Eprinting func name here 
+_ZN47_$LT$i32$u20$as$u20$core..iter..range..Step$GT$9add_usize17h79dc291b52b89b16Eprinting func name here 
+_ZN49_$LT$usize$u20$as$u20$core..iter..range..Step$GT$9add_usize17h6c1353dfecf7f2dbEprinting func name here 
+_ZN4core3cmp5impls55_$LT$impl$u20$core..cmp..PartialOrd$u20$for$u20$i32$GT$2lt17h158c42edafe7321bEprinting func name here 
+_ZN4core3cmp5impls57_$LT$impl$u20$core..cmp..PartialOrd$u20$for$u20$usize$GT$2lt17hfd694ddb79f3bc88Eprinting func name here 
+_ZN4core3mem13uninitialized17h023b0420eda21312Eprinting func name here 
+_ZN4core3mem13uninitialized17h636d8a459a42d744Eprinting func name here 
+_ZN4core3mem13uninitialized17h7c4236fb8e45cf4cEprinting func name here 
+_ZN4core3mem13uninitialized17h8b61384b076b6767Eprinting func name here 
+_ZN4core3mem4swap17h1f2f35506b7c0874Eprinting func name here 
+_ZN4core3mem4swap17h224e27c3c32afdc7Eprinting func name here 
+_ZN4core3mem7size_of17h743dff8980294f5cEprinting func name here 
+_ZN4core3mem7size_of17h92f70eaaba1285dfEprinting func name here 
+_ZN4core3mem7size_of17he4983235a16c143aEprinting func name here 
+_ZN4core3num18ptr_try_from_impls69_$LT$impl$u20$core..convert..TryFrom$LT$usize$GT$$u20$for$u20$u32$GT$8try_from17h76060844654e5189Eprinting func name here 
+_ZN4core3num21_$LT$impl$u20$u32$GT$12wrapping_add17h3ee6f379427e8362Eprinting func name here 
+_ZN4core3num21_$LT$impl$u20$u32$GT$9max_value17h5454891719db0e4bEprinting func name here 
+_ZN4core3num23_$LT$impl$u20$usize$GT$11checked_add17h36646f663c3aa161Eprinting func name here 
+_ZN4core3num23_$LT$impl$u20$usize$GT$15overflowing_add17hafece3919b534ca9Eprinting func name here 
+_ZN4core3ops8function6FnOnce9call_once17h7d9653f498fabafbEprinting func name here 
+_ZN4core3ptr13drop_in_place17h16e064066759387eEprinting func name here 
+_ZN4core3ptr19swap_nonoverlapping17h2b7b1a21c87c27c6Eprinting func name here 
+_ZN4core3ptr19swap_nonoverlapping17hc465685be18fa2e9Eprinting func name here 
+_ZN4core3ptr23swap_nonoverlapping_one17h1b051df1f066314cEprinting func name here 
+_ZN4core3ptr23swap_nonoverlapping_one17h9fe699dc0cfd3a59Eprinting func name here 
+_ZN4core3ptr25swap_nonoverlapping_bytes17h81da6b6fecea6293Eprinting func name here 
+_ZN4core3ptr31_$LT$impl$u20$$BP$mut$u20$T$GT$3add17h0eac3636610d4ddcEprinting func name here 
+_ZN4core3ptr31_$LT$impl$u20$$BP$mut$u20$T$GT$6offset17h2c30b236fad9cfe9Eprinting func name here 
+_ZN4core3ptr4read17h9aa5a2ec52406a67Eprinting func name here 
+_ZN4core3ptr4read17h9abfa416eb00bc3aEprinting func name here 
+_ZN4core3ptr5write17h09191f96ef1c1b2fEprinting func name here 
+_ZN4core3ptr5write17h47ffc10d273a2535Eprinting func name here 
+_ZN4core4iter5range93_$LT$impl$u20$core..iter..iterator..Iterator$u20$for$u20$core..ops..range..Range$LT$A$GT$$GT$4next17h2f88036dff05aee3Eprinting func name here 
+_ZN4core4iter5range93_$LT$impl$u20$core..iter..iterator..Iterator$u20$for$u20$core..ops..range..Range$LT$A$GT$$GT$4next17hc27be20a3d2ac24bEprinting func name here 
+_ZN4core5slice29_$LT$impl$u20$$u5b$T$u5d$$GT$3len17hf81ff98b18a8349cEprinting func name here 
+_ZN50_$LT$T$u20$as$u20$core..convert..From$LT$T$GT$$GT$4from17h322debb998bfaf1aEprinting func name here 
+_ZN53_$LT$T$u20$as$u20$core..convert..TryFrom$LT$U$GT$$GT$8try_from17hbf730dd35793f61eEprinting func name here 
+_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17h2ce349b3cfa04c0aEprinting func name here 
+_ZN54_$LT$I$u20$as$u20$core..iter..traits..IntoIterator$GT$9into_iter17h02a6dedfd3046133Eprinting func name here 
+_ZN54_$LT$I$u20$as$u20$core..iter..traits..IntoIterator$GT$9into_iter17h205222aaffd89832Eprinting func name here 
+_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17ha17a028fb37daae9Eprinting func name here 
+_ZN9perf_test4main17h8252daa33a2b63a8Emade it past function check 
+file id1instrumenting entry point of:_ZN9perf_test4main17h8252daa33a2b63a8Elid is:16387printing func name here 
+_ZN9perf_test11expensiveOP17h0fd88b9e93310979Emade it past function check 
+file id1instrumenting entry point of:_ZN9perf_test11expensiveOP17h0fd88b9e93310979Elid is:0lid is:0lid is:0lid is:0lid is:16385printing operand name 
+n
+printing operand name 
+_2
+printing operand name 
+_2
+printing operand name 
+n
+printing operand name 
+_2
+printing operand name 
+n
+printing operand name 
+_0
+printing operand name 
+n
+printing operand name 
+_0
+printing operand name 
+n
+printing operand name 
+_0
+printing func name here 
+_ZN9perf_test9reduction17hec97ef8901011fa7Emade it past function check 
+file id1number of exit blocks
+5found new exit block
+bb5found new exit block
+bb4pushing real exit block
+found new exit block
+panicpushing real exit block
+found new exit block
+panic16pushing real exit block
+found new exit block
+panic17pushing real exit block
+number of exit blocks
+8found new exit block
+bb5found new exit block
+bb14pushing real exit block
+found new exit block
+panic18pushing real exit block
+found new exit block
+panic19pushing real exit block
+found new exit block
+panic20pushing real exit block
+found new exit block
+panic21pushing real exit block
+found new exit block
+panic22pushing real exit block
+found new exit block
+panic23pushing real exit block
+number of exit blocks
+6found new exit block
+bb5found new exit block
+bb26pushing real exit block
+found new exit block
+panic24pushing real exit block
+found new exit block
+panic25pushing real exit block
+found new exit block
+panic26pushing real exit block
+found new exit block
+panic27pushing real exit block
+number of exit blocks
+4found new exit block
+bb5found new exit block
+bb35pushing real exit block
+found new exit block
+panic28pushing real exit block
+found new exit block
+panic29pushing real exit block
+instrumenting entry point of:_ZN9perf_test9reduction17hec97ef8901011fa7Elid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:16404printing operand name 
+iterations
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+printing operand name 
+a
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+b
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+c
+printing operand name 
+iterations
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_9
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_15
+printing operand name 
+
+printing operand name 
+
+printing operand name 
+localRes
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+val
+printing operand name 
+val
+printing operand name 
+__next
+printing operand name 
+__next
+printing operand name 
+i
+printing operand name 
+a
+printing operand name 
+a
+printing operand name 
+b
+printing operand name 
+b
+printing operand name 
+c
+printing operand name 
+c
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_32
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_40
+printing operand name 
+
+printing operand name 
+
+printing operand name 
+arrSum
+printing operand name 
+arrMul
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+val4
+printing operand name 
+val4
+printing operand name 
+__next3
+printing operand name 
+__next3
+printing operand name 
+i5
+printing operand name 
+b
+printing operand name 
+b
+printing operand name 
+c
+printing operand name 
+i5
+printing operand name 
+c
+printing operand name 
+a
+printing operand name 
+tmp
+printing operand name 
+tmp
+printing operand name 
+i5
+printing operand name 
+a
+printing operand name 
+i5
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+localRes
+printing operand name 
+localRes
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_71
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_79
+printing operand name 
+
+printing operand name 
+
+printing operand name 
+a
+printing operand name 
+c
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_100
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+val9
+printing operand name 
+val9
+printing operand name 
+__next8
+printing operand name 
+__next8
+printing operand name 
+i10
+printing operand name 
+arrSum
+printing operand name 
+i10
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+arrSum
+printing operand name 
+arrMul
+printing operand name 
+i10
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localArr
+printing operand name 
+arrMul
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_105
+printing operand name 
+
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+val14
+printing operand name 
+val14
+printing operand name 
+__next13
+printing operand name 
+__next13
+printing operand name 
+i15
+printing operand name 
+a
+printing operand name 
+i15
+printing operand name 
+a
+printing operand name 
+c
+printing operand name 
+i15
+printing operand name 
+c
+printing func name here 
+_ZN9perf_test6do_all17hdc553eacfb8e3e31Emade it past function check 
+file id1number of exit blocks
+3found new exit block
+bb6pushing real exit block
+found new exit block
+bb5found new exit block
+panicpushing real exit block
+number of exit blocks
+6found new exit block
+bb6pushing real exit block
+found new exit block
+bb13pushing real exit block
+found new exit block
+panic6pushing real exit block
+found new exit block
+panic7pushing real exit block
+found new exit block
+panic8pushing real exit block
+found new exit block
+panic9pushing real exit block
+instrumenting entry point of:_ZN9perf_test6do_all17hdc553eacfb8e3e31Elid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:0lid is:16448printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_5
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_13
+printing operand name 
+
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+val
+printing operand name 
+val
+printing operand name 
+__next
+printing operand name 
+__next
+printing operand name 
+i
+printing operand name 
+i
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_25
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+_33
+printing operand name 
+
+printing operand name 
+
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is not o type array?
+printing operand name 
+val4
+printing operand name 
+val4
+printing operand name 
+__next3
+printing operand name 
+__next3
+printing operand name 
+i5
+printing operand name 
+i5
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+tmp
+printing operand name 
+i5
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing operand name 
+i5
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+localarr
+printing operand name 
+tmp
+printing operand name 
+i5
+printing operand name 
+
+handling of rust array 
+
+determining type of pointer operand 
+
+
+is of type array with name: 
+arr
+printing func name here 
+main

@@ -1,0 +1,57 @@
+1:75 BGN loop 10
+1:83 END loop
+1:69 BGN loop 10
+1:83 END loop
+1:43 BGN loop 10
+1:48 END loop
+1:32 BGN loop 10
+1:40 END loop
+1:51 BGN loop 20
+1:57 END loop
+1:25 BGN loop 1000
+1:31 END loop
+1:4 BGN func 1:64
+1:14 BGN func 1:1
+1:53 BGN func 1:1
+1:52 BGN func 1:1
+1:3 BGN func 1:20
+1:16 END func
+1:57 END func
+1:83 END func
+1:31 NOM  INIT *|localRes
+1:40 NOM  INIT *|arrSum
+1:27 NOM  RAW 1:23|b RAW 1:27|b WAR 1:27|b
+1:33 NOM  RAW 1:27|b RAW 1:33|b WAR 1:33|b
+1:48 NOM  WAW 1:36|a
+1:35 NOM  RAW 1:26|a RAW 1:36|a WAR 1:36|tmp INIT *|tmp
+1:26 NOM  RAW 1:23|a RAW 1:26|a WAR 1:26|a
+1:34 NOM  RAW 1:28|c RAW 1:32|i5 RAW 1:34|c WAR 1:34|c
+1:21 NOM  INIT *|* INIT *|localArr
+1:20 NOM  INIT *|iterations
+1:79 NOM  RAW 1:75|i5 RAW 1:77|tmp WAR 1:78|arr
+1:69 NOM  RAW 1:32|* RAW 1:43|* RAW 1:69|* RAW 1:69|val RAW 1:69|__next WAR 1:37|* WAR 1:43|val WAR 1:43|__next WAR 1:69|val WAR 1:69|__next WAR 1:69|_13 WAR 1:70|i WAW 1:43|i WAW 1:44|* INIT *|* INIT *|_5 INIT *|_13
+1:53 NOM  RAW 1:49|c RAW 1:51|i15 RAW 1:53|c WAR 1:53|c
+1:78 NOM  RAW 1:70|arr RAW 1:75|i5 WAR 1:77|localarr
+1:49 NOM  WAW 1:34|c
+1:65 NOM  WAR 1:32|* WAR 1:32|arr WAW 1:32|arr INIT *|arr
+1:36 NOM  RAW 1:32|i5 RAW 1:35|tmp WAR 1:35|a
+1:23 NOM  RAW 1:23|* INIT *|* INIT *|a INIT *|b INIT *|c
+1:52 NOM  RAW 1:48|a RAW 1:51|i15 RAW 1:52|a WAR 1:52|a
+1:64 NOM  WAR 1:25|localarr WAR 1:32|localarr WAW 1:25|localarr WAW 1:37|localarr INIT *|* INIT *|localarr
+1:77 NOM  RAW 1:64|localarr RAW 1:75|i5 WAR 1:53|tmp WAR 1:79|tmp
+1:25 NOM  RAW 1:20|iterations RAW 1:25|* RAW 1:25|val RAW 1:25|__next WAR 1:25|_15 WAR 1:25|val WAR 1:25|__next WAW 1:25|i INIT *|* INIT *|_9 INIT *|_15 INIT *|val INIT *|__next INIT *|i
+1:51 NOM  RAW 1:51|* RAW 1:51|val14 RAW 1:51|__next13 WAR 1:51|_105 WAR 1:51|val14 WAR 1:51|__next13 WAR 1:53|i15 INIT *|* INIT *|_100 INIT *|_105 INIT *|val14 INIT *|__next13 INIT *|i15
+1:28 NOM  RAW 1:23|c RAW 1:28|c WAR 1:28|c
+1:11 NOM  RAW 1:11|_2 WAR 1:11|_2 INIT *|_2
+1:70 NOM  RAW 1:69|i WAW 1:65|arr
+1:12 NOM  WAR 1:16|_0 INIT *|_0
+1:41 NOM  INIT *|arrMul
+1:32 NOM  RAW 1:32|* RAW 1:32|val4 RAW 1:32|__next3 WAR 1:32|_40 WAR 1:32|val4 WAR 1:32|__next3 WAR 1:37|i5 INIT *|* INIT *|_32 INIT *|_40 INIT *|val4 INIT *|__next3 INIT *|i5
+1:75 NOM  RAW 1:43|* RAW 1:51|* RAW 1:75|* RAW 1:75|val4 RAW 1:75|__next3 WAR 1:43|* WAR 1:43|_25 WAR 1:45|* WAR 1:51|__next3 WAR 1:51|i5 WAR 1:51|_33 WAR 1:75|val4 WAR 1:75|__next3 WAR 1:75|_33 WAR 1:79|i5 INIT *|* INIT *|val4
+1:16 NOM  RAW 1:12|_0 RAW 1:14|_0
+1:45 NOM  RAW 1:21|localArr RAW 1:41|arrMul RAW 1:43|i10 RAW 1:45|arrMul WAR 1:45|arrMul
+1:37 NOM  RAW 1:21|localArr RAW 1:31|localRes RAW 1:32|i5 RAW 1:37|localRes WAR 1:37|localRes
+1:14 NOM  WAR 1:16|_0
+1:43 NOM  RAW 1:43|* RAW 1:43|val9 RAW 1:43|__next8 WAR 1:43|_79 WAR 1:43|val9 WAR 1:43|__next8 WAR 1:45|i10 INIT *|* INIT *|_71 INIT *|_79 INIT *|val9 INIT *|__next8 INIT *|i10
+1:44 NOM  RAW 1:21|localArr RAW 1:40|arrSum RAW 1:43|i10 RAW 1:44|arrSum WAR 1:44|arrSum
+1:6 END program
