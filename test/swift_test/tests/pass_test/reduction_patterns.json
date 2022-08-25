@@ -1,0 +1,72 @@
+{
+  "reduction": [
+    {
+      "node_id": "1:7",
+      "start_line": "1:7",
+      "end_line": "1:12",
+      "iterations_count": 11,
+      "instructions_count": 0,
+      "workload": 0,
+      "pragma": "#pragma omp parallel for",
+      "first_private": [],
+      "private": [
+        null
+      ],
+      "last_private": [],
+      "shared": [],
+      "reduction": [
+        "-:b",
+        "+:d",
+        "*:c",
+        "+:a"
+      ]
+    },
+    {
+      "node_id": "1:7",
+      "start_line": "1:7",
+      "end_line": "1:12",
+      "iterations_count": 11,
+      "instructions_count": 0,
+      "workload": 0,
+      "pragma": "#pragma omp parallel for",
+      "first_private": [],
+      "private": [
+        null
+      ],
+      "last_private": [],
+      "shared": [],
+      "reduction": [
+        "-:b",
+        "+:d",
+        "*:c",
+        "+:a"
+      ]
+    }
+  ],
+  "do_all": [],
+  "pipeline": [],
+  "geometric_decomposition": [
+    {
+      "node_id": "1:3",
+      "start_line": "1:7",
+      "end_line": "1:13",
+      "iterations_count": -1,
+      "instructions_count": 0,
+      "workload": 0,
+      "do_all_children": [],
+      "reduction_children": [
+        "1:7"
+      ],
+      "min_iter_number": 11,
+      "num_tasks": 2,
+      "pragma": "for (i = 0; i < num-tasks; i++) #pragma omp task",
+      "first_private": [
+        "i"
+      ],
+      "private": [],
+      "last_private": [],
+      "shared": [],
+      "reduction": []
+    }
+  ]
+}

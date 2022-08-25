@@ -1,0 +1,71 @@
+START 1:1
+1:113 BGN loop 101
+1:118 END loop
+1:95 BGN loop 20
+1:101 END loop
+1:81 BGN loop 101
+1:91 END loop
+1:63 BGN loop 101
+1:79 END loop
+1:118 BGN loop 101
+1:125 END loop
+1:53 BGN loop 101
+1:63 END loop
+1:13 BGN loop 101
+1:16 END loop
+1:132 BGN func 1:110
+1:34 BGN func 1:24
+1:96 BGN func 1:24
+1:50 BGN func 1:11
+1:131 BGN func 1:49
+1:110 BGN func 1:11
+1:97 BGN func 1:24
+1:19 BGN func 1:11
+1:16 END func
+1:37 END func
+1:101 END func
+1:125 END func
+1:97 NOM  RAW 1:91|cG RAW 1:97|cG WAR 1:97|cG
+1:69 NOM  RAW 1:54|a RAW 1:70|a
+1:70 NOM  WAR 1:69|a
+1:92 NOM  WAW 1:70|a
+1:110 NOM  RAW 1:1|iterations WAR 1:95|localArr
+1:50 NOM  RAW 1:1|iterations INIT *|localArr
+1:49 NOM  INIT *|a INIT *|b INIT *|c
+1:66 NOM  RAW 1:56|c RAW 1:66|c WAR 1:66|c
+1:19 NOM  RAW 1:1|iterations INIT *|globalArr
+1:65 NOM  RAW 1:2|bG RAW 1:65|bG WAR 1:65|bG
+1:13 NOM  RAW 1:13|* WAR 1:13|* WAR 1:13|$i$generator WAR 1:14|* WAR 1:16|* WAR 1:37|* WAW 1:13|* INIT *|* INIT *|$i$generator
+1:83 NOM  RAW 1:19|globalArr RAW 1:79|arrMul RAW 1:83|arrMul RAW 1:83|* WAR 1:81|* WAR 1:83|arrMul WAR 1:83|*
+1:79 NOM  WAR 1:63|arrSum INIT *|arrMul
+1:118 NOM  RAW 1:110|localArr RAW 1:118|* WAR 1:113|* WAR 1:118|* WAR 1:119|* WAW 1:113|* WAW 1:113|$i$generator11
+1:14 NOM  RAW 1:14|* WAR 1:13|*
+1:55 NOM  RAW 1:49|b RAW 1:55|b WAR 1:55|b
+1:114 NOM  INIT *|globalArr
+1:56 NOM  RAW 1:49|c RAW 1:56|c WAR 1:56|c
+1:1 NOM  INIT *|iterations
+1:119 NOM  RAW 1:110|localArr RAW 1:119|* WAR 1:118|*
+1:91 NOM  WAW 1:3|cG
+1:32 NOM  WAW 1:29|fn
+1:2 NOM  INIT *|aG INIT *|bG
+1:120 NOM  RAW 1:19|globalArr RAW 1:120|* WAR 1:118|* WAR 1:120|* INIT *|localArr
+1:54 NOM  RAW 1:49|a RAW 1:54|a WAR 1:54|a
+1:113 NOM  RAW 1:19|globalArr RAW 1:113|* WAR 1:95|* WAR 1:113|* WAW 1:13|* WAW 1:82|$i$generator WAW 1:83|* WAW 1:95|* WAW 1:96|$i$generator
+1:3 NOM  INIT *|cG
+1:121 NOM  WAW 1:114|globalArr
+1:34 NOM  WAW 1:29|fn
+1:5 NOM  INIT *|arrSum INIT *|arrMul
+1:4 NOM  INIT *|localRes
+1:63 NOM  RAW 1:1|iterations RAW 1:63|* WAR 1:53|* WAR 1:63|* WAR 1:67|* WAW 1:53|* WAW 1:53|$i$generator11
+1:81 NOM  RAW 1:1|iterations RAW 1:81|* WAR 1:63|* WAR 1:81|* WAR 1:82|* WAW 1:63|* WAW 1:63|$i$generator25 INIT *|*
+1:29 NOM  WAR 1:13|fn WAR 1:37|fn INIT *|fn
+1:53 NOM  RAW 1:1|iterations RAW 1:53|* WAR 1:13|* WAR 1:13|$i$generator WAR 1:16|* WAR 1:53|* WAW 1:13|* INIT *|* INIT *|$i$generator
+1:82 NOM  RAW 1:79|arrSum RAW 1:82|arrSum RAW 1:82|* WAR 1:81|* WAR 1:82|arrSum
+1:96 NOM  RAW 1:92|a RAW 1:96|a WAR 1:96|a
+1:37 NOM  RAW 1:32|fn RAW 1:34|fn
+1:95 NOM  RAW 1:95|* WAR 1:81|* WAR 1:83|* WAR 1:95|* WAW 1:81|* WAW 1:81|$i$generator41
+1:16 NOM  RAW 1:12|arr
+1:12 NOM  INIT *|arr
+1:8 NOM  INIT *|N
+1:67 NOM  RAW 1:4|localRes RAW 1:67|localRes RAW 1:67|* WAR 1:63|* WAR 1:67|localRes
+1:132 END program

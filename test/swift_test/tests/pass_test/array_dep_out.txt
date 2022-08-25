@@ -1,0 +1,15 @@
+START 1:1
+1:21 BGN func 1:10
+1:18 END func
+1:15 NOM  WAR 1:14|locArr
+1:3 NOM  WAW 1:1|arr
+1:16 NOM  WAW 1:11|locArr
+1:1 NOM  INIT *|* INIT *|arr
+1:14 NOM  RAW 1:11|locArr RAW 1:14|* WAW 1:10|loc INIT *|*
+1:4 NOM  RAW 1:1|arr RAW 1:3|arr INIT *|testvalue
+1:6 NOM  WAW 1:1|arr
+1:10 NOM  RAW 1:1|arr INIT *|loc
+1:11 NOM  INIT *|* INIT *|locArr
+1:12 NOM  WAW 1:6|arr
+1:13 NOM  WAW 1:11|locArr
+1:21 END program
