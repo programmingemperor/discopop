@@ -1,0 +1,50 @@
+{
+  "reduction": [],
+  "do_all": [
+    {
+      "node_id": "1:6",
+      "start_line": "1:10",
+      "end_line": "1:11",
+      "iterations_count": 6,
+      "instructions_count": 0,
+      "workload": 0,
+      "first_private": [],
+      "private": [
+        "_14",
+        "__next",
+        "i",
+        null,
+        "arr",
+        "val"
+      ],
+      "last_private": [],
+      "shared": [],
+      "reduction": []
+    }
+  ],
+  "pipeline": [],
+  "geometric_decomposition": [
+    {
+      "node_id": "1:0",
+      "start_line": "1:10",
+      "end_line": "1:13",
+      "iterations_count": -1,
+      "instructions_count": 0,
+      "workload": 0,
+      "do_all_children": [
+        "1:6"
+      ],
+      "reduction_children": [],
+      "min_iter_number": 6,
+      "num_tasks": 2,
+      "pragma": "for (i = 0; i < num-tasks; i++) #pragma omp task",
+      "first_private": [
+        "i"
+      ],
+      "private": [],
+      "last_private": [],
+      "shared": [],
+      "reduction": []
+    }
+  ]
+}

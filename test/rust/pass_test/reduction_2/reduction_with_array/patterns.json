@@ -1,0 +1,55 @@
+{
+  "reduction": [
+    {
+      "node_id": "1:6",
+      "start_line": "1:8",
+      "end_line": "1:12",
+      "iterations_count": 6,
+      "instructions_count": 0,
+      "workload": 0,
+      "pragma": "#pragma omp parallel for",
+      "first_private": [
+        "arr"
+      ],
+      "private": [
+        "val",
+        "__next",
+        null
+      ],
+      "last_private": [],
+      "shared": [],
+      "reduction": [
+        "*:d",
+        "+:a",
+        "-:b",
+        "+:c"
+      ]
+    }
+  ],
+  "do_all": [],
+  "pipeline": [],
+  "geometric_decomposition": [
+    {
+      "node_id": "1:0",
+      "start_line": "1:8",
+      "end_line": "1:15",
+      "iterations_count": -1,
+      "instructions_count": 0,
+      "workload": 0,
+      "do_all_children": [],
+      "reduction_children": [
+        "1:6"
+      ],
+      "min_iter_number": 6,
+      "num_tasks": 2,
+      "pragma": "for (i = 0; i < num-tasks; i++) #pragma omp task",
+      "first_private": [
+        "i"
+      ],
+      "private": [],
+      "last_private": [],
+      "shared": [],
+      "reduction": []
+    }
+  ]
+}
