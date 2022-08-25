@@ -1304,9 +1304,9 @@ bool CUGeneration::runOnFunction(Function &F)
     {
         return false;
     }
-    if(funcName.find("_ZN5doall4main17hc80c5399873394c9E") == string::npos) {
+    if((funcName.find("_ZN9perf_test4main17h8252daa33a2b63a8E") == string::npos) && (funcName.find("_ZN9perf_test11expensiveOP17h0fd88b9e93310979E") == string::npos) && (funcName.find("_ZN9perf_test6do_all17hdc553eacfb8e3e31E") == string::npos) && (funcName.find("_ZN9perf_test9reduction17hec97ef8901011fa7E") == string::npos )) {
         return false; 
-    } 
+    }
     // obviously needs to be more generic
     cout << "made it past function check \n"; 
     
