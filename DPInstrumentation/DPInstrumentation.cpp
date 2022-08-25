@@ -251,7 +251,7 @@ bool DiscoPoP::doInitialization(Module &M)
     setupCallbacks();
 
     // Check loop parallelism?
-    if (ClCheckLoopPar)
+    if (1)
     {
         if (DP_DEBUG)
         {
@@ -465,6 +465,9 @@ bool DiscoPoP::runOnFunction(Function &F)
     
 
     StringRef funcName = F.getName();
+
+    cout << "printing func name here \n"; 
+    cout << funcName.data(); 
     // Avoid functions we don't want to instrument
     
     if (funcName.find("llvm.dbg") != string::npos)    // llvm debug calls
@@ -505,11 +508,11 @@ bool DiscoPoP::runOnFunction(Function &F)
     }
     // not sure why rust defines all these functions in executable but we have to ignore them
     // because they have invalid lids
-    cout << "printing func name here \n"; 
-    cout << funcName.data(); 
-    if(funcName.find("_ZN5doall4main17hc80c5399873394c9E") == string::npos) {
+   
+    if((funcName.find("_ZN9perf_test4main17h8252daa33a2b63a8E") == string::npos) && (funcName.find("_ZN9perf_test11expensiveOP17h0fd88b9e93310979E") == string::npos) && (funcName.find("_ZN9perf_test6do_all17hdc553eacfb8e3e31E") == string::npos) && (funcName.find("_ZN9perf_test9reduction17hec97ef8901011fa7E") == string::npos )) {
         return false; 
     }
+    // TODO: just instrumenting this one function right now, needs to be changed if other functions are used ofc
 
     // obviously needs to be more generic
     cout << "made it past function check \n"; 
@@ -525,7 +528,7 @@ bool DiscoPoP::runOnFunction(Function &F)
     cout << fileID;   
 
     // Check loop parallelism?
-    if (ClCheckLoopPar)
+    if (1)
     {
         LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
         CFA(F, LI);
@@ -988,7 +991,7 @@ void DiscoPoP::runOnBasicBlock(BasicBlock &BB)
             assert(parent != NULL);
             StringRef fn = parent->getName();
 
-            if (fn.equals("_ZN9reduction4main17h7e25980b9ee16ef8E"))     // returning from main
+            if (fn.equals("_ZN9perf_test4main17h8252daa33a2b63a8E"))     // returning from main
             {
                 insertDpFinalize(&*BI);
             }
