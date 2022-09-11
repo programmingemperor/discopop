@@ -1163,12 +1163,7 @@ void CUGeneration::findStartEndLineNumbers(Node *root, int &start, int &end)
     {
         if (start == -1 || ((start > root->startLine) && root->startLine != -1))
         {   
-            cout << "getting startline from node with ID: " << root->ID << "\n";
-            cout << "start line: " << root->startLine << "\n"; 
-            cout << "start: " << start << "\n"; 
-    
             start = root->startLine;
-            cout << "start is then set to: " << dputil::decodeLID(start) << "\n"; 
         }
 
         if (end < root->endLine)
@@ -1190,16 +1185,8 @@ void CUGeneration::fillStartEndLineNumbers(Node *root)
         int start = -1, end = -1;
 
         if(root->type == nodeTypes::loop){
-        cout << "running on loop childnoes to get lines \n"; }
+
         findStartEndLineNumbers(root, start, end);
-
-        if(root->type == nodeTypes::loop) {
-
-            cout << "LOOP DETECTED: filling in lines for loop node, start, end, ID, " << start << "\n" << end << "\n" << root->ID << "\n"; 
-            cout << "encoded?" << dputil::decodeLID(start) << "\n" << dputil::decodeLID(end) << "\n"; 
-        
-        }
-
 
         root->startLine = start;
         root->endLine = end;
