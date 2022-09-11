@@ -512,10 +512,6 @@ bool DiscoPoP::runOnFunction(Function &F)
     if((funcName.find("_ZN9perf_test4main17h8252daa33a2b63a8E") == string::npos) && (funcName.find("_ZN9perf_test11expensiveOP17h0fd88b9e93310979E") == string::npos) && (funcName.find("_ZN9perf_test6do_all17hdc553eacfb8e3e31E") == string::npos) && (funcName.find("_ZN9perf_test9reduction17hec97ef8901011fa7E") == string::npos )) {
         return false; 
     }
-    // TODO: just instrumenting this one function right now, needs to be changed if other functions are used ofc
-
-    // obviously needs to be more generic
-    cout << "made it past function check \n"; 
 
     determineFileID(F, fileID);
     
@@ -523,9 +519,7 @@ bool DiscoPoP::runOnFunction(Function &F)
     if (!fileID)
         return false;
 
-    cout << "file id"; 
 
-    cout << fileID;   
 
     // Check loop parallelism?
     if (1)
@@ -645,9 +639,7 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
     {
         return getOrInsertVarName("*", builder);
     }
-    cout << "printing operand name \n"; 
-    cout << operand->getName().data(); 
-    cout << "\n"; 
+  
     if (operand->hasName())
     {
         // we've found a global variable
@@ -700,29 +692,18 @@ Value *DiscoPoP::determineVarName(Instruction *const I)
     }
     // handling rust array/struct
     if(isa<GetElementPtrInst>(*operand)) {
-        cout << "handling of rust array \n"; 
-        errs() << *operand;
-        cout << "\n";
+      
         GetElementPtrInst *gep = cast<GetElementPtrInst>(operand);
         Value *ptrOperand = gep->getPointerOperand();
         PointerType *PTy = cast<PointerType>(ptrOperand->getType());
-        cout << "determining type of pointer operand \n";
-        errs() << *ptrOperand; 
-        cout << "\n"; 
-        errs() << *PTy; 
-        cout << "\n"; 
-   
+    
 
         if (PTy->getElementType()->getTypeID() == Type::ArrayTyID) {
-                cout << "is of type array with name: \n"; 
-                cout << string(ptrOperand->getName().data()); 
-                cout << "\n";
+             
                 
 
                 return getOrInsertVarName(string(ptrOperand->getName().data()), builder);
-            } else {
-                cout << "is not o type array?\n";
-            }
+            } 
         
     }
 
@@ -743,7 +724,6 @@ void DiscoPoP::processStructTypes(string const &fullStructName, MDNode *structNo
     // sometimes it's impossible to get the list of struct members (e.g badref)
     if (structNode->getNumOperands() <= 10 || structNode->getOperand(10) == NULL)
     {
-        errs() << "cannot process member list of this struct: \n";
         structNode->dump();
         return;
     }
@@ -1174,8 +1154,7 @@ void DiscoPoP::instrumentFuncEntry(Function &F)
     for (BasicBlock::iterator BI = entryBB.begin(), EI = entryBB.end(); BI != EI; ++BI)
     {
         lid = getLID(&*BI, fileID);
-        cout << "lid is:"; 
-        cout << lid;
+      
         if (lid > 0 && !isa<PHINode>(BI))
         {
             IRBuilder<> IRB(&*entryBB.begin());

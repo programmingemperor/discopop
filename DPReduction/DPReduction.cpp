@@ -164,7 +164,6 @@ void DPReduction::create_function_bindings() {
 // Inserts calls to allow for dynamic analysis of the loops.
 void DPReduction::insert_functions() {
 
-  std::cout << "inserting functions: \n"; 
   
   std::ofstream out_file;
   out_file.open("reduction_meta.txt");
@@ -203,7 +202,6 @@ void DPReduction::insert_functions() {
                              instruction.load_inst_);
     } else {
 
-      std::cout << "inserting add_instr_fn_n because operand is not a getelementptr \n";
       llvm::ArrayRef<llvm::Value*> args_ref(args, 3);
 
       args[2] = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx_), 1);
@@ -334,14 +332,12 @@ llvm::Instruction* find_reduction_instr(llvm::Value* val) {
     return nullptr;
   }
 
-  errs() << *val << "val from find reduction instruction \n";
 
   llvm::Instruction* instr = llvm::cast<llvm::Instruction>(val);
   unsigned opcode = instr->getOpcode();
   
   char c = util::get_char_for_opcode(instr);
  
-  cout << "char for opcode is: " << c << "\n"; 
   if (c != ' ') {
     // if the front end generates a call instruction to llvm then the instruction has 
     // to be built here or there must be a different way to deal with this operation
@@ -371,17 +367,13 @@ int get_op_order(char c) {
 // loads the value (if such a load instruction exists).
 llvm::Instruction* DPReduction::get_reduction_instr(
     llvm::Instruction* store_instr, llvm::Instruction** load_instr) {
-  // error for rust lies here 
-  cout << "getting reduction instruction\n";
-  errs() << *store_instr << "\n"; 
-  errs () << *load_instr << "\n";
+
 
   // find the reduction operation for the source operand of the 'store_instr'
   llvm::Instruction* reduction_instr =
       find_reduction_instr(store_instr->getOperand(0));
   if (!reduction_instr) return nullptr;
-  cout << "find_reduction_instr was not null \n";
-  errs() << *reduction_instr << "\n"; 
+ 
 
   // Now find the destination address of the store instruction.
   // After that, search the load instruction that loads this value and store a
@@ -418,8 +410,6 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
 
   std::string header_name  = loop_header->getName(); 
   
-  cout << "loop header name" << header_name << "\n";
-
 
   
   
@@ -432,8 +422,6 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
   if (basic_blocks.size() < 3) {
     return;
   }
-
-  std::cout << "instrumenting loop: \n"; 
 
   // add an entry to the 'loops_' vector
   loop_info_t loop_info;
@@ -459,14 +447,11 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
 
   // Scan all instructions in the loop's basic blocks to find the load and
   // store instructions.
-  std::cout << "instrumenting loop basic blocks: \n"; 
   for (size_t i = 0; i < basic_blocks.size(); ++i) {
-    std::cout << "entering basic block: \n"; 
   
     llvm::BasicBlock* const bb = basic_blocks[i];
 
     std::string bb_name = bb->getName();
-    std::cout << bb_name << "\n";
     //todo: must find different way to find inc and cond block for loops in rust and swift
    
     // with generators in rust, the inc and cond basic block are both the header
@@ -497,10 +482,7 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
 
             std::string debug_helper =  (opcode == llvm::Instruction::Store) ? "store instruction"
                                                  : "load instruction";
-            std::cout << "identified" << debug_helper << "\n";   
-
-            llvm::errs() << "instruction : " << *instr << "\n";
-            std::cout << "\n";                                  
+                                        
 
         if (!map_ptr->insert(std::make_pair(operand, instr)).second) {
           if ((*map_ptr)[operand]) {
@@ -513,8 +495,6 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
               (*map_ptr)[operand] = nullptr;
             }
           }
-        } else  {
-          std::cout << "added instruction successfully to map \n";
         }
       }
     }
@@ -525,7 +505,6 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
   // - a variable must not be read or written more than once
   //
   // - the store instruction comes after the load instruction
-  std::cout << "creating candidates list \n";
 
   std::vector<instr_info_t> candidates;
   for (auto it = load_instructions.begin(); it != load_instructions.end();
@@ -549,41 +528,29 @@ void DPReduction::instrument_loop(int file_id, llvm::Loop* loop) {
         // only importand when arr[i] is the accumulator
         // instruction has no name because the getelementptr instruction has none
         // currently no support for arrays as reducers
-        cout << "should have no name" << "\n";
-        llvm::errs() << *it->first << "\n";
+    
         info.var_name_ = it->first->getName();
         info.loop_line_nr_ = loop_info.line_nr_;
         info.file_id_ = file_id;
         info.store_inst_ = llvm::dyn_cast<llvm::StoreInst>(it2->second);
         candidates.push_back(info);
-        errs() << *info.store_inst_ << "\n"; 
-        std::cout << "ADDED INSTRUCTION TO CANDIDATES \n";
       }
     }
   }
 
   // now check if the variables are part of a reduction operation
-  std::cout << "priting candidates \n";
   for (auto candidate : candidates) {
-    std::cout << candidate.var_name_ << "\n"; 
-    std::cout << candidate.loop_line_nr_ << "\n"; 
-    errs () << candidate.store_inst_ << "\n"; 
-
+   
     llvm::Instruction* load_instr = nullptr;
     llvm::Instruction* instr =
         get_reduction_instr(candidate.store_inst_, &load_instr);
-        std::cout << "instruction: \n";
 
     if (instr) {
-      errs () << *instr << "\n";
       candidate.load_inst_ = llvm::cast<llvm::LoadInst>(load_instr);
-      cout << "the proper found load instruction is \n"; 
-      errs() << *candidate.load_inst_ << "\n";
+      
 
       // must be edited for rust/swift  with llvm.operation function calls
       candidate.operation_ = util::get_char_for_opcode(instr);
-      std::cout << "added candidate to instruction vector \n";
-      errs () << *candidate.load_inst_ << "\n";
       instructions_.push_back(candidate);
     }
   }

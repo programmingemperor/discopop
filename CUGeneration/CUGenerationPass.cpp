@@ -417,29 +417,16 @@ string CUGeneration::determineVariableName(Instruction *I, bool &isGlobalVariabl
 
     // handling rust array/struct
     if(isa<GetElementPtrInst>(*operand)) {
-        cout << "handling of rust array \n"; 
-        errs() << *operand;
-        cout << "\n";
+
         GetElementPtrInst *gep = cast<GetElementPtrInst>(operand);
         Value *ptrOperand = gep->getPointerOperand();
         PointerType *PTy = cast<PointerType>(ptrOperand->getType());
-        cout << "determining type of pointer operand \n";
-        errs() << *ptrOperand; 
-        cout << "\n"; 
-        errs() << *PTy; 
-        cout << "\n"; 
    
 
         if (PTy->getElementType()->getTypeID() == Type::ArrayTyID) {
-                cout << "is of type array with name: \n"; 
-                cout << string(ptrOperand->getName().data()); 
-                cout << "\n";
-                
 
                 return getOrInsertVarName(string(ptrOperand->getName().data()), builder);
-            } else {
-                cout << "is not o type array?\n";
-            }
+            } 
     }
     
     if (isa<LoadInst>(*operand) || isa<StoreInst>(*operand))
@@ -762,7 +749,6 @@ void CUGeneration::populateGlobalVariablesSet(Region *TopRegion, set<string> &gl
                 // NOTE: changed 'instruction' to '&*instruction'
                 string varName = determineVariableName(&*instruction, isGlobalVariable);
 
-                cout << "varname debug " << varName << "\n";
 
                 if (isGlobalVariable) // add it if it is a global variable in the program
                 {
@@ -771,11 +757,9 @@ void CUGeneration::populateGlobalVariablesSet(Region *TopRegion, set<string> &gl
 
                 if (variableToBBMap.find(varName) != variableToBBMap.end())
                 {   
-                    cout << "variable found, checking for bb \n"; 
                     //this var has already once recordded. check for bb id
                     if (variableToBBMap[varName] != *bb)
                     {   
-                        cout << "found in other basic block, determined global to this bb \n";
                         //global variable found. Insert into the globalVariablesSet
                         globalVariablesSet.insert(varName);
                     }
@@ -785,7 +769,6 @@ void CUGeneration::populateGlobalVariablesSet(Region *TopRegion, set<string> &gl
                     //record usage of the variable.
                     variableToBBMap.insert(pair<string, BasicBlock *>(varName, *bb));
                     //errs() << varName << "\n";
-                    cout << "recording usage" << varName << "\n"; 
                 }
             }
         }
@@ -1307,10 +1290,7 @@ bool CUGeneration::runOnFunction(Function &F)
     if((funcName.find("_ZN9perf_test4main17h8252daa33a2b63a8E") == string::npos) && (funcName.find("_ZN9perf_test11expensiveOP17h0fd88b9e93310979E") == string::npos) && (funcName.find("_ZN9perf_test6do_all17hdc553eacfb8e3e31E") == string::npos) && (funcName.find("_ZN9perf_test9reduction17hec97ef8901011fa7E") == string::npos )) {
         return false; 
     }
-    // obviously needs to be more generic
-    cout << "made it past function check \n"; 
     
-    cout << "running on function" << funcName.data() << "\n";
 
     //initializeCUIDCounter();
     vector<CU *> CUVector;
@@ -1318,7 +1298,7 @@ bool CUGeneration::runOnFunction(Function &F)
     map<string, vector<CU *>> BBIDToCUIDsMap;
 
     determineFileID(F, fileID);
-    cout << "past file id check \n";
+    
     /********************* Initialize root values ***************************/
     Node *root = new Node;
     root->name = F.getName();
@@ -1340,7 +1320,7 @@ bool CUGeneration::runOnFunction(Function &F)
         lid = to_string(BI->getFunction()->getSubprogram()->getLine());
     }
 
-    cout << "get to arg iterator \n"; 
+    
     for (Function::arg_iterator it = F.arg_begin(); it != F.arg_end(); it++)
     {
 
@@ -1351,34 +1331,30 @@ bool CUGeneration::runOnFunction(Function &F)
         Variable v(it->getName(), rso.str(), to_string(fileID) + ":" + lid);
         root->argumentsList.push_back(v);
     }
-    cout << "get to loop wrapper analysis \n";
+   
     /********************* End of initialize root values ***************************/
     // errs()<< "000---\n";
     // NOTE: changed the pass name for loopinfo -- LoopInfo &LI = getAnalysis<LoopInfo>();
     LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 
-    cout << "region info \n";
+
     //get the top level region
     RIpass = &getAnalysis<RegionInfoPass>();
     RI = &(RIpass->getRegionInfo());
     Region *TopRegion = RI->getTopLevelRegion();
-    cout << "return lines \n";
     getFunctionReturnLines(TopRegion, root);
 
     populateGlobalVariablesSet(TopRegion, globalVariablesSet);
-    cout << "cu creation \n";
     createCUs(TopRegion, globalVariablesSet, CUVector, BBIDToCUIDsMap, root, LI);
 
     fillCUVariables(TopRegion, globalVariablesSet, CUVector, BBIDToCUIDsMap);
 
     fillStartEndLineNumbers(root);
-    cout << "securing stream \n";
     secureStream();
 
     printOriginalVariables(originalVariablesSet);
 
     printData(root);
-    cout << " freeing memory \n";
     for (auto i : CUVector)
     {
         delete (i);
