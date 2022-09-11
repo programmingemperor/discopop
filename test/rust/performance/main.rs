@@ -292,13 +292,13 @@ fn parallel_doall() -> () {
     
 
     //maybe when labeled as unsafe?
-    (0..arr.len()).into_par_iter()
+    /*(0..arr.len()).into_par_iter()
     .for_each(|i| {
         let mut tmp = localarr[i]; 
         localarr[i] = arr[i];
         arr[i] = tmp; 
      }
-    );
+    );*/
 
     println!("Parallel doall example 2: {}", now.elapsed().as_nanos()); 
 
