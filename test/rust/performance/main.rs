@@ -2,7 +2,7 @@ use rayon::prelude::*;
 use std::time::{Duration, Instant}; 
 use std::thread::sleep;
 
-const iterations: usize = 100000; 
+const iterations: usize = 10000; 
 
 fn main() {
     // We can use this function here, and define it somewhere later
